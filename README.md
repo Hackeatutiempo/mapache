@@ -50,6 +50,18 @@ and it keeps working on a plane.
 | Open source and self-hostable | **Yes** | No |
 | Dependencies to install | **0** | — |
 
+## 🤖 Let your AI agent install it
+
+Not technical? Give this to your AI agent (Claude Code, Codex, Cursor…) and it does everything for you:
+
+```text
+Install Mapache for me following https://github.com/Hackeatutiempo/mapache/blob/main/AGENTS.md
+and leave a shortcut so I can open it with a double-click.
+```
+
+The step-by-step guide for agents lives in [AGENTS.md](AGENTS.md): it checks Node.js, gets the code, starts it,
+creates a desktop shortcut and explains how to keep your boards safe.
+
 ## 🚀 Quick start
 
 All you need is [Node.js](https://nodejs.org) 18 or newer. There is nothing else to install.
@@ -60,7 +72,8 @@ cd mapache
 npm start
 ```
 
-Open **<http://localhost:4321>** and start thinking. On Windows you can also double-click `Abrir Mapache.cmd`.
+Open **<http://localhost:4321>** and start thinking. Next time, double-click `Abrir Mapache.cmd` (Windows) or run
+`./start.sh` (macOS and Linux): they start Mapache if needed and open the browser.
 
 > **Tip:** in Chrome or Edge choose *Install app* in the address bar. Mapache gets its own window and icon and
 > works even when the server is off.

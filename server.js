@@ -4,7 +4,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
-const PORT = 4321;
+const PORT = Number(process.env.PORT) || 4321;
 const REPO = 'Hackeatutiempo/mapache';
 
 // La primera vez que se arranca en una terminal, pregunta si quieres dar una estrella al proyecto en GitHub.

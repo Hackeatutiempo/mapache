@@ -49,6 +49,18 @@ instante y funciona hasta en un avión.
 | Código abierto y autoalojable | **Sí** | No |
 | Dependencias que instalar | **0** | — |
 
+## 🤖 Que lo instale tu agente de IA
+
+¿No eres técnico? Pásale esto a tu agente de IA (Claude Code, Codex, Cursor…) y lo hace todo por ti:
+
+```text
+Instálame Mapache siguiendo https://github.com/Hackeatutiempo/mapache/blob/main/AGENTS.md
+y déjame un acceso directo para abrirlo con doble clic.
+```
+
+La guía paso a paso para agentes está en [AGENTS.md](AGENTS.md): comprueba Node.js, descarga el código, lo arranca,
+crea un acceso directo en el escritorio y explica cómo guardar copia de tus tableros.
+
 ## 🚀 Empezar
 
 Solo necesitas [Node.js](https://nodejs.org) 18 o posterior. No hay nada más que instalar.
@@ -59,7 +71,8 @@ cd mapache
 npm start
 ```
 
-Abre **<http://localhost:4321>** y a pensar. En Windows también puedes hacer doble clic en `Abrir Mapache.cmd`.
+Abre **<http://localhost:4321>** y a pensar. Las siguientes veces, doble clic en `Abrir Mapache.cmd` (Windows) o
+`./start.sh` (macOS y Linux): arrancan Mapache si hace falta y abren el navegador.
 
 > **Consejo:** en Chrome o Edge elige *Instalar aplicación* en la barra de direcciones. Mapache tendrá su propia
 > ventana e icono y funcionará aunque el servidor esté apagado.
