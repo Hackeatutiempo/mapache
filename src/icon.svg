@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="14" fill="#1a222c"/>
+  <!-- Orejas -->
+  <path d="M10 27 L13 9 L26 18 Z" fill="#7d8896"/>
+  <path d="M54 27 L51 9 L38 18 Z" fill="#7d8896"/>
+  <path d="M14 22 L15.5 13 L22 18 Z" fill="#2a323d"/>
+  <path d="M50 22 L48.5 13 L42 18 Z" fill="#2a323d"/>
+  <!-- Cabeza -->
+  <path d="M6 34 C6 20 18 15 32 15 C46 15 58 20 58 34 C58 44 46 54 32 56 C18 54 6 44 6 34 Z" fill="#9aa4b1"/>
+  <!-- Cejas y hocico claros -->
+  <path d="M14 28 C20 22 27 23 32 27 C37 23 44 22 50 28 C44 27 37 28 32 31 C27 28 20 27 14 28 Z" fill="#eef1f5"/>
+  <path d="M21 42 C24 36 28 35 32 38 C36 35 40 36 43 42 C41 50 36 54 32 54 C28 54 23 50 21 42 Z" fill="#eef1f5"/>
+  <!-- Antifaz -->
+  <path d="M9 36 C11 29 18 28 24 30 C28 31 30 33 32 33 C34 33 36 31 40 30 C46 28 53 29 55 36 C52 42 45 43 40 40 C37 38 35 37 32 37 C29 37 27 38 24 40 C19 43 12 42 9 36 Z" fill="#232b36"/>
+  <!-- Ojos (morado de la app) -->
+  <circle cx="22" cy="35" r="3.6" fill="#a78bfa"/>
+  <circle cx="42" cy="35" r="3.6" fill="#a78bfa"/>
+  <circle cx="23" cy="34" r="1.2" fill="#fff"/>
+  <circle cx="43" cy="34" r="1.2" fill="#fff"/>
+  <!-- Nariz -->
+  <path d="M28.5 43 C28.5 41 35.5 41 35.5 43 C35.5 45 33.5 46.5 32 46.5 C30.5 46.5 28.5 45 28.5 43 Z" fill="#232b36"/>
+</svg>

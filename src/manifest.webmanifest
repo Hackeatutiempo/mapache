@@ -1,0 +1,9 @@
+{
+  "name": "Mapache",
+  "short_name": "Mapache",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#111821",
+  "theme_color": "#151b23",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}

@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; media-src 'self' blob: https:; frame-src https://www.youtube-nocookie.com https://player.vimeo.com https://www.loom.com" />
+  <meta name="theme-color" content="#151b23" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icon.svg" type="image/svg+xml" />
+  <title>Mapache</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <aside id="sidebar">
+    <div class="side-head">
+      <span class="brand"><img src="icon.svg" alt="" width="22" height="22">Mapache</span>
+      <button id="new-map" class="icon-btn" data-tip="Nuevo mapa o carpeta"></button>
+    </div>
+    <nav id="map-list" aria-label="Tus mapas y carpetas"></nav>
+    <div class="side-foot">
+      <button id="backup-export" class="side-link" data-tip="Descarga todos tus mapas en un archivo"></button>
+      <button id="backup-import" class="side-link" data-tip="Recupera mapas desde una copia"></button>
+      <input id="backup-file" type="file" accept=".json,application/json" hidden />
+    </div>
+  </aside>
+
+  <main id="main">
+    <header id="topbar">
+      <button id="toggle-sidebar" class="icon-btn" data-tip="Barra lateral"></button>
+      <span id="breadcrumb"></span>
+      <input id="map-title" spellcheck="false" aria-label="Nombre del mapa" />
+      <span id="save-state"></span>
+      <div class="top-actions">
+        <button id="theme-btn" class="icon-btn" data-tip="Tema claro u oscuro"></button>
+        <button id="export-png" class="icon-btn" data-tip="Exportar PNG"></button>
+      </div>
+    </header>
+
+    <div id="stage">
+      <div id="sections-layer" class="world-layer"></div>
+      <div id="items-back" class="world-layer"></div>
+      <svg id="lines-layer" class="layer"><g id="lines"></g></svg>
+      <div id="world" class="world-layer"></div>
+      <div id="items-front" class="world-layer"></div>
+      <svg id="conn-layer" class="layer"><g id="conns"></g></svg>
+      <svg id="ui-layer" class="layer"><g id="ui"></g></svg>
+      <div id="toolbox" aria-label="Herramientas">
+        <button data-tool="select" class="tool" data-tip="Seleccionar · V"></button>
+        <button data-tool="hand" class="tool" data-tip="Mano · H"></button>
+        <span class="tool-sep"></span>
+        <button data-tool="shape" class="tool" data-tip="Formas · R"></button>
+        <button data-tool="mindmap" class="tool" data-tip="Mapa mental · M"></button>
+        <button data-tool="note" class="tool" data-tip="Nota · N"></button>
+        <button data-tool="conn" class="tool" data-tip="Conector · C"></button>
+        <button data-tool="text" class="tool" data-tip="Texto · T"></button>
+        <button data-tool="sticker" class="tool" data-tip="Sticker · X"></button>
+        <button data-tool="image" class="tool" data-tip="Medio: imagen o vídeo · I"></button>
+        <button data-tool="table" class="tool" data-tip="Tabla o CSV · E"></button>
+        <button data-tool="draw" class="tool" data-tip="Dibujo a mano · H"></button>
+        <span class="tool-sep"></span>
+        <button data-tool="section" class="tool" data-tip="Sección · ."></button>
+      </div>
+      <div id="drawbox" aria-label="Dibujo a mano" hidden>
+        <button data-draw="close" class="tool" data-tip="Salir del dibujo · Esc"></button>
+        <span class="tool-sep"></span>
+        <button data-draw="pen" class="tool" data-tip="Rotulador · H"></button>
+        <button data-draw="highlighter" class="tool" data-tip="Subrayador · Shift H"></button>
+        <button data-draw="eraser" class="tool" data-tip="Goma · E"></button>
+        <button data-draw="lasso" class="tool" data-tip="Seleccionar trazos · S"></button>
+        <span class="tool-sep"></span>
+        <button data-draw="thin" class="tool" data-tip="Trazo fino"></button>
+        <button data-draw="thick" class="tool" data-tip="Trazo grueso"></button>
+        <button data-draw="detect" class="tool" data-tip="Detectar formas"></button>
+        <span class="tool-sep"></span>
+        <button data-draw="color" class="tool" data-tip="Color"><span class="ink-dot"></span></button>
+      </div>
+      <input id="image-file" type="file" accept="image/*,video/*" multiple hidden />
+      <input id="csv-file" type="file" accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values" hidden />
+      <div id="chart-tip" hidden></div>
+      <div id="contextbar" hidden></div>
+      <div id="popover" hidden></div>
+      <div id="tooltip" hidden></div>
+      <div id="update-bar" role="status" hidden>Hay una versión nueva de Mapache <button id="update-reload">Recargar</button></div>
+    </div>
+
+    <div id="zoombar">
+      <div class="pill-group">
+        <button data-cmd="undo" class="icon-btn" data-tip="Deshacer · Ctrl Z"></button>
+        <button data-cmd="redo" class="icon-btn" data-tip="Rehacer · Ctrl Shift Z"></button>
+      </div>
+      <div class="pill-group">
+        <button data-cmd="zoom-out" class="icon-btn" data-tip="Alejar · −"></button>
+        <button data-cmd="zoom-reset" id="zoom-label" data-tip="Zoom al 100% · 0">100%</button>
+        <button data-cmd="zoom-in" class="icon-btn" data-tip="Acercar · ="></button>
+      </div>
+      <div class="pill-group">
+        <button data-cmd="fit" class="icon-btn" data-tip="Ver todo · 1"></button>
+        <button data-cmd="help" class="icon-btn" data-tip="Atajos · ?"></button>
+        <button data-cmd="about" class="icon-btn" data-tip="Información"></button>
+      </div>
+    </div>
+  </main>
+
+  <div id="side-menu" class="floating-menu" hidden></div>
+  <div id="ctxmenu" class="ctx-menu" role="menu" hidden></div>
+
+  <div id="dialog" class="modal" hidden>
+    <div class="modal-card dialog-card" role="alertdialog" aria-modal="true">
+      <h2 class="dialog-title" hidden></h2>
+      <p class="dialog-msg"></p>
+      <div class="modal-foot"><button class="ghost" data-dlg="cancel">Cancelar</button><button class="primary" data-dlg="ok">Aceptar</button></div>
+    </div>
+  </div>
+  <div id="about" class="modal" hidden>
+    <div class="modal-card about-card" role="dialog" aria-modal="true" aria-labelledby="about-title">
+      <button class="icon-btn about-close" data-cmd="about" aria-label="Cerrar" data-icon="close"></button>
+      <img class="about-avatar" src="creator.webp" alt="Cristian, creador de Mapache" width="96" height="96" />
+      <p class="about-kicker">Creado por</p>
+      <h2 id="about-title">Cristian</h2>
+      <p class="about-tag"><b>Hackea Tu Tiempo</b> · Formación y sistemas de IA para negocio real</p>
+      <div class="about-links">
+        <a class="about-link" href="https://hackeatutiempo.com" target="_blank" rel="noopener">
+          <span class="al-icon" data-icon="globe"></span><span class="al-text"><b>Web</b><small>hackeatutiempo.com</small></span><span class="al-go" data-icon="external"></span>
+        </a>
+        <a class="about-link" href="https://www.instagram.com/hackeatutiempo/" target="_blank" rel="noopener">
+          <span class="al-icon" data-icon="instagram"></span><span class="al-text"><b>Instagram</b><small>@hackeatutiempo</small></span><span class="al-go" data-icon="external"></span>
+        </a>
+        <a class="about-link" href="https://github.com/Hackeatutiempo/mapache" target="_blank" rel="noopener">
+          <span class="al-icon" data-icon="code"></span><span class="al-text"><b>Código de Mapache</b><small>github.com/Hackeatutiempo/mapache</small></span><span class="al-go" data-icon="external"></span>
+        </a>
+      </div>
+      <a class="about-star" href="https://github.com/Hackeatutiempo/mapache" target="_blank" rel="noopener"><span data-icon="star"></span>¿Te gusta? Dale una estrella en GitHub</a>
+      <p class="about-foot">Mapache · mapas mentales y pizarra de código abierto <span style="white-space:nowrap">(AGPL-3.0)</span></p>
+    </div>
+  </div>
+  <div id="help" class="modal" hidden>
+    <div class="modal-card help-card" role="dialog" aria-labelledby="help-title">
+      <h2 id="help-title">Atajos de teclado</h2>
+      <div class="cols">
+        <div>
+          <h3>Mapa mental</h3>
+          <dl>
+            <dt>Tab</dt><dd>Añadir hijo</dd>
+            <dt>Enter</dt><dd>Editar · al escribir: añadir hermano</dd>
+            <dt>Ctrl + Enter</dt><dd>Hermano encima</dd>
+            <dt>Alt + Enter</dt><dd>Añadir padre</dd>
+            <dt>Alt + flechas</dt><dd>Añadir rápido en esa dirección</dd>
+            <dt>Shift + Enter</dt><dd>Nueva línea</dd>
+            <dt>Flechas</dt><dd>Moverse entre nodos</dd>
+            <dt>Supr</dt><dd>Borrar rama</dd>
+            <dt>Ctrl + D</dt><dd>Duplicar</dd>
+            <dt>Ctrl + /</dt><dd>Plegar / desplegar</dd>
+            <dt>Ctrl + Alt + [ / ]</dt><dd>Subir / bajar de nivel</dd>
+            <dt>Shift + X</dt><dd>Icono del nodo</dd>
+            <dt>Ctrl + C / X / V</dt><dd>Copiar / cortar / pegar rama</dd>
+            <dt>Arrastrar la raíz</dt><dd>Mover el mapa entero</dd>
+          </dl>
+          <h3>Texto</h3>
+          <dl>
+            <dt>Ctrl + B / I</dt><dd>Negrita / cursiva</dd>
+            <dt>Ctrl + Shift + X / K / H</dt><dd>Tachado / código / resaltado</dd>
+            <dt>Ctrl + Shift + U</dt><dd>Enlace</dd>
+            <dt>* · 1. · _ · #</dt><dd>Al empezar: lista, numerada, checklist, título</dd>
+          </dl>
+        </div>
+        <div>
+          <h3>Crear</h3>
+          <dl>
+            <dt>M</dt><dd>Mapa mental nuevo (puede haber varios en un tablero)</dd>
+            <dt>N · T · X · I</dt><dd>Nota · texto · sticker · imagen o vídeo</dd>
+            <dt>R · U · O · D</dt><dd>Rectángulo · píldora · óvalo · rombo</dd>
+            <dt>A · G · Y · J</dt><dd>Trapecio · triángulo · cilindro · nube</dd>
+            <dt>.</dt><dd>Sección</dd>
+            <dt>E</dt><dd>Tabla (o importar CSV)</dd>
+            <dt>C</dt><dd>Conector (arrastra de un objeto a otro)</dd>
+            <dt>H · Shift + H</dt><dd>Dibujo a mano · subrayador</dd>
+            <dt>Arrastrar archivo / Ctrl + V</dt><dd>Añadir imagen, vídeo o enlace de YouTube</dd>
+            <dt>Pegar desde Excel o Sheets</dt><dd>Se convierte en tabla</dd>
+            <dt>En una tabla</dt><dd>Tab / Enter: celda siguiente</dd>
+            <dt>Ctrl + Alt + Retroceso</dt><dd>Borrar la fila de la tabla</dd>
+            <dt>Q</dt><dd>Ocultar botones de añadir</dd>
+          </dl>
+        </div>
+        <div>
+          <h3>Seleccionar y editar</h3>
+          <dl>
+            <dt>V</dt><dd>Seleccionar</dd>
+            <dt>Arrastrar en el fondo</dt><dd>Seleccionar varios (lo que toque el recuadro)</dd>
+            <dt>Shift + clic</dt><dd>Añadir o quitar de la selección</dd>
+            <dt>Ctrl + A</dt><dd>Seleccionar todo</dd>
+            <dt>Clic derecho</dt><dd>Menú de acciones</dd>
+            <dt>Shift + L</dt><dd>Bloquear / desbloquear</dd>
+            <dt>Ctrl + Alt + C / V</dt><dd>Copiar / pegar estilo</dd>
+            <dt>Flechas · Shift + flechas</dt><dd>Mover lo seleccionado (2 / 20 px)</dd>
+            <dt>Alt al arrastrar</dt><dd>Mover sin ajustarse a las guías</dd>
+            <dt>Supr · Ctrl + D</dt><dd>Borrar · duplicar lo seleccionado</dd>
+          </dl>
+          <h3>Ver y deshacer</h3>
+          <dl>
+            <dt>Rueda · Espacio + arrastrar</dt><dd>Desplazar la vista</dd>
+            <dt>Ctrl + rueda</dt><dd>Zoom</dd>
+            <dt>= · − · 0 · 1</dt><dd>Acercar · alejar · 100 % · ver todo</dd>
+            <dt>Ctrl + Z · Ctrl + Shift + Z</dt><dd>Deshacer · rehacer</dd>
+            <dt>?</dt><dd>Esta ayuda</dd>
+          </dl>
+        </div>
+      </div>
+      <div class="modal-foot"><span class="muted-hint">Esc para cerrar</span><button data-cmd="help" class="primary">Cerrar</button></div>
+    </div>
+  </div>
+
+  <script src="layout.js"></script>
+  <script src="icons.js"></script>
+  <script src="shapes.js"></script>
+  <script src="tables.js"></script>
+  <script src="charts.js"></script>
+  <script src="connectors.js"></script>
+  <script src="arrange.js"></script>
+  <script src="ink.js"></script>
+  <script src="store.js"></script>
+  <script src="sidebar.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

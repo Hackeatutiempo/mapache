@@ -1,0 +1,16 @@
+{
+  "name": "mapache",
+  "version": "0.3.0",
+  "description": "Open-source mind maps and infinite whiteboard that run in your browser",
+  "license": "AGPL-3.0-or-later",
+  "author": "Hackeatutiempo",
+  "homepage": "https://github.com/Hackeatutiempo/mapache",
+  "repository": { "type": "git", "url": "git+https://github.com/Hackeatutiempo/mapache.git" },
+  "keywords": ["mind-map", "mindmap", "whiteboard", "diagram", "flowchart", "local-first", "self-hosted", "offline"],
+  "engines": { "node": ">=18" },
+  "private": true,
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test"
+  }
+}

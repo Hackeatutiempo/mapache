@@ -1,0 +1,8 @@
+node_modules/
+private/
+*.log
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+.mapache-star-asked
