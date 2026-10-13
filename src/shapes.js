@@ -1,6 +1,7 @@
 // Formas de diagrama: catálogo y generador de paths SVG para un tamaño w × h.
 (function (root) {
   'use strict';
+  const t = root.MMI18n.t;
   const r = (v) => Math.round(v * 10) / 10;
 
   function poly(pts) { return `M${pts.map(([x, y]) => `${r(x)},${r(y)}`).join('L')}Z`; }
@@ -62,18 +63,18 @@
 
   // Catálogo: [clave, nombre, tecla, tamaño por defecto]
   const CATALOG = [
-    ['rect', 'Rectángulo', 'R', [160, 100]],
-    ['pill', 'Píldora', 'U', [160, 64]],
-    ['oval', 'Óvalo', 'O', [120, 120]],
-    ['diamond', 'Rombo', 'D', [140, 140]],
-    ['parallelogram', 'Paralelogramo', '', [170, 100]],
-    ['parallelogram2', 'Paralelogramo inverso', '', [170, 100]],
-    ['trapezoid', 'Trapecio', 'A', [170, 100]],
-    ['triangle', 'Triángulo', 'G', [130, 110]],
-    ['hexagon', 'Hexágono', '', [160, 110]],
-    ['cylinder', 'Cilindro', 'Y', [120, 140]],
-    ['cloud', 'Nube', 'J', [190, 130]],
-    ['star', 'Estrella', '', [130, 125]],
+    ['rect', t('Rectángulo'), 'R', [160, 100]],
+    ['pill', t('Píldora'), 'U', [160, 64]],
+    ['oval', t('Óvalo'), 'O', [120, 120]],
+    ['diamond', t('Rombo'), 'D', [140, 140]],
+    ['parallelogram', t('Paralelogramo'), '', [170, 100]],
+    ['parallelogram2', t('Paralelogramo inverso'), '', [170, 100]],
+    ['trapezoid', t('Trapecio'), 'A', [170, 100]],
+    ['triangle', t('Triángulo'), 'G', [130, 110]],
+    ['hexagon', t('Hexágono'), '', [160, 110]],
+    ['cylinder', t('Cilindro'), 'Y', [120, 140]],
+    ['cloud', t('Nube'), 'J', [190, 130]],
+    ['star', t('Estrella'), '', [130, 125]],
   ];
 
   // Miniatura para menús.

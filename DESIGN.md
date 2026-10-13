@@ -124,6 +124,17 @@ named `map:<rootId>`.
 - Preferences such as the last note color or shape style live in `localStorage` under `mindmap:*`.
 - Backups are JSON: `{ app: 'mapache', version: 4, folders, maps, media }`. Imports also accept a single `doc`.
 
+## Interface language
+
+- Spanish and English. `src/i18n.js` loads first and exposes `MMI18n.t(spanish, vars)`: the Spanish text is the key
+  and `src/i18n-en.js` holds the English dictionary (`{name}` placeholders in both). A missing entry shows the Spanish.
+- The preference is `mindmap:lang` (`auto`, `es` or `en`); `auto` picks Spanish when the browser's first language
+  starts with `es`, English otherwise. The globe button in the top bar changes it and reloads the page.
+- Static text in `index.html` is translated once at start-up by `MMI18n.apply`. Only displayed text is translated:
+  stored values and internal keys (such as the `FMT_COLORS` names) never change, so boards open the same in both.
+- Text the app creates (the first node, section names, the sample table) is written in the current language.
+- `test/i18n.test.js` fails if a `t('…')` key or a static string in `index.html` has no English entry.
+
 ## Agents (`lib/tools.js`, `lib/mcp.js`, `bin/mapache.js`)
 
 - One set of tools (list, read, search, create and update boards, add and edit nodes, items and connectors, open a

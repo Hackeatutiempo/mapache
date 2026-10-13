@@ -5,6 +5,7 @@
 // y el texto siempre en tinta (nunca del color de la serie).
 (function (root) {
   'use strict';
+  const t = root.MMI18n.t;
 
   // Paletas por tema, validadas con scripts/validate_palette.js contra el fondo de cada uno:
   // oscuro contra #111821, claro contra #ffffff (categórica: todas las comprobaciones; aviso de contraste en
@@ -40,22 +41,25 @@
   const FONT = '"Segoe UI", system-ui, sans-serif';
 
   const KINDS = [
-    ['column', 'Columnas'], ['column-stacked', 'Columnas apiladas'], ['column-100', 'Columnas 100 %'],
-    ['bar', 'Barras'], ['bar-stacked', 'Barras apiladas'],
-    ['line', 'Líneas'], ['area', 'Área'], ['area-stacked', 'Área apilada'],
-    ['pie', 'Circular'], ['donut', 'Anillo'],
-    ['scatter', 'Dispersión'], ['bubble', 'Burbujas'], ['radar', 'Radar'],
-    ['funnel', 'Embudo'], ['heatmap', 'Mapa de calor'], ['waterfall', 'Cascada'], ['stat', 'Cifra destacada'],
+    ['column', t('Columnas')], ['column-stacked', t('Columnas apiladas')], ['column-100', t('Columnas 100 %')],
+    ['bar', t('Barras')], ['bar-stacked', t('Barras apiladas')],
+    ['line', t('Líneas')], ['area', t('Área')], ['area-stacked', t('Área apilada')],
+    ['pie', t('Circular')], ['donut', t('Anillo')],
+    ['scatter', t('Dispersión')], ['bubble', t('Burbujas')], ['radar', t('Radar')],
+    ['funnel', t('Embudo')], ['heatmap', t('Mapa de calor')], ['waterfall', t('Cascada')], ['stat', t('Cifra destacada')],
   ];
   // Límite de series por forma: 8 en general; 3 donde todas las parejas se ven juntas (puntos, radar).
   const SERIES_CAP = { scatter: 3, bubble: 3, radar: 3 };
 
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
-  const nf = new Intl.NumberFormat('es-ES', { maximumFractionDigits: 2 });
-  const nfc = new Intl.NumberFormat('es-ES', { notation: 'compact', maximumFractionDigits: 1 });
+  // Cifras con el formato del idioma de la interfaz (1.234,5 en español, 1,234.5 en inglés).
+  const LOCALE = root.MMI18n.locale;
+  const nf = new Intl.NumberFormat(LOCALE, { maximumFractionDigits: 2 });
+  const nfc = new Intl.NumberFormat(LOCALE, { notation: 'compact', maximumFractionDigits: 1 });
   let compactMode = false;
   const fmt = (v) => (v == null || Number.isNaN(v) ? '—' : compactMode ? nfc.format(v) : nf.format(v));
-  const nf1 = new Intl.NumberFormat('es-ES', { maximumFractionDigits: 1 });
+  const nf1 = new Intl.NumberFormat(LOCALE, { maximumFractionDigits: 1 });
+  const pc = (v) => t('{n} %', { n: v }); // porcentaje: «45 %» en español, «45%» en inglés
   const r1 = (v) => Math.round(v * 10) / 10;
 
   // Números escritos a la española o a la inglesa: 1.234,5 · 1,234.5 · 12,5 · 45 % · 1.200 €.
@@ -136,7 +140,7 @@
     const series = numeric.slice(0, cap);
     const dropped = numeric.length - series.length;
     if (!series.length || !data.labels.length) {
-      out.push(text(W / 2, H / 2, 'Añade números a la tabla para ver el gráfico', { anchor: 'middle', color: INK.muted, size: 13 }));
+      out.push(text(W / 2, H / 2, t('Añade números a la tabla para ver el gráfico'), { anchor: 'middle', color: INK.muted, size: 13 }));
       return wrap(out, W, H);
     }
     compactMode = Math.max(0, ...series.flatMap((se) => se.values.filter((v) => v != null).map(Math.abs))) >= 10000;
@@ -155,7 +159,7 @@
       legendFor(series.map((s, i) => [color(i), s.name]), ['line', 'area', 'area-stacked', 'radar'].includes(kind) ? 'line' : 'square');
     }
     if (dropped > 0) {
-      out.push(text(W - 18, top - 2, `+${dropped} series sin mostrar`, { size: 11, anchor: 'end' }));
+      out.push(text(W - 18, top - 2, t('+{n} series sin mostrar', { n: dropped }), { size: 11, anchor: 'end' }));
     }
 
     const fn = { column: cartesian, 'column-stacked': cartesian, 'column-100': cartesian, bar: cartesian, 'bar-stacked': cartesian,
@@ -195,7 +199,7 @@
     // Todas las marcas del eje con el mismo formato (si una es «20 mil», también «5 mil»).
     // Ejes y etiquetas comparten formato: si el eje llega a «10 mil», los valores también van en «mil».
     if (!pct && Math.max(Math.abs(nt.min), Math.abs(nt.max)) >= 10000) compactMode = true;
-    const tickLabel = (v) => (pct ? `${v} %` : fmt(v));
+    const tickLabel = (v) => (pct ? pc(v) : fmt(v));
 
     // Márgenes para las etiquetas de los ejes.
     const yLabelW = Math.max(...nt.ticks.map((t) => textW(tickLabel(t)))) + 10;
@@ -231,7 +235,7 @@
       else out.push(text(center(i), plot.y + plot.h + 18, l.length > 14 ? `${l.slice(0, 13)}…` : l, { anchor: 'middle', color: INK.secondary }));
     });
 
-    const tipRows = (i) => series.map((se, si) => [color(si), se.name, pct ? `${nf.format(val(si, i) || 0)} % (${fmt(se.values[i])})` : fmt(se.values[i])]);
+    const tipRows = (i) => series.map((se, si) => [color(si), se.name, pct ? `${pc(nf.format(val(si, i) || 0))} (${fmt(se.values[i])})` : fmt(se.values[i])]);
 
     if (isLine) {
       const area = kind.startsWith('area');
@@ -308,7 +312,7 @@
         }
         out.push(`<path d="${d}" fill="${color(sg.si)}"/>`);
         if (showValues && !stacked) {
-          const label = pct ? `${nf.format(sg.v)} %` : fmt(series[sg.si].values[i]);
+          const label = pct ? pc(nf.format(sg.v)) : fmt(series[sg.si].values[i]);
           if (horizontal) out.push(text(Math.max(p0, p1) + 6, start + sg.off + thick / 2 + 4, label, { color: INK.secondary }));
           else out.push(text(start + sg.off + thick / 2, Math.min(p0, p1) - 6, label, { anchor: 'middle', color: INK.secondary }));
         }
@@ -330,11 +334,11 @@
     items.sort((a, b) => b[1] - a[1]);
     if (items.length > 6) {
       const rest = items.slice(5).reduce((s, [, v]) => s + v, 0);
-      items = [...items.slice(0, 5), ['Otros', rest]];
+      items = [...items.slice(0, 5), [t('Otros'), rest]];
     }
     const total = items.reduce((s, [, v]) => s + v, 0);
     if (!total) return;
-    legendFor(items.map(([l, v], i) => [CAT[i], `${l} · ${nf1.format((v / total) * 100)} %`]), 'square');
+    legendFor(items.map(([l, v], i) => [CAT[i], `${l} · ${pc(nf1.format((v / total) * 100))}`]), 'square');
     const R = Math.max(20, Math.min(box.w, box.h) / 2 - 8);
     const cx = box.x + box.w / 2, cy = box.y + box.h / 2 + 2;
     const inner = kind === 'donut' ? R * 0.6 : 0;
@@ -349,12 +353,12 @@
           ? `M${p(a0, R)}A${R},${R} 0 ${big} 1 ${p(a1, R)}L${p(a1, inner)}A${inner},${inner} 0 ${big} 0 ${p(a0, inner)}Z`
           : `M${cx},${cy}L${p(a0, R)}A${R},${R} 0 ${big} 1 ${p(a1, R)}Z`;
       // El trazo del color de fondo es la separación de 2 px entre porciones.
-      out.push(`<path class="chart-hit" d="${d}" fill="${CAT[i]}" stroke="${INK.surface}" stroke-width="2" ${tt(l, [[CAT[i], se.name, `${fmt(v)} · ${nf1.format((v / total) * 100)} %`]])}/>`);
+      out.push(`<path class="chart-hit" d="${d}" fill="${CAT[i]}" stroke="${INK.surface}" stroke-width="2" ${tt(l, [[CAT[i], se.name, `${fmt(v)} · ${pc(nf1.format((v / total) * 100))}`]])}/>`);
       a0 = a1;
     });
     if (inner) {
       out.push(text(cx, cy + 2, fmt(total), { anchor: 'middle', size: Math.max(14, inner * 0.38), color: INK.primary, weight: 600 }));
-      out.push(text(cx, cy + 20, 'Total', { anchor: 'middle', size: 11 }));
+      out.push(text(cx, cy + 20, t('Total'), { anchor: 'middle', size: 11 }));
     }
   }
 
@@ -362,7 +366,7 @@
   function scatter(ctx, kind) {
     const { data, series, box, out } = ctx;
     if (series.length < 2) {
-      out.push(text(box.x + box.w / 2, box.y + box.h / 2, 'Necesita dos columnas numéricas (X e Y)', { anchor: 'middle', size: 12 }));
+      out.push(text(box.x + box.w / 2, box.y + box.h / 2, t('Necesita dos columnas numéricas (X e Y)'), { anchor: 'middle', size: 12 }));
       return;
     }
     const [sx, sy, ss] = series;
@@ -391,7 +395,7 @@
   function radar(ctx) {
     const { data, series, color, box, out } = ctx;
     const n = data.labels.length;
-    if (n < 3) { out.push(text(box.x + box.w / 2, box.y + box.h / 2, 'Necesita al menos 3 filas', { anchor: 'middle', size: 12 })); return; }
+    if (n < 3) { out.push(text(box.x + box.w / 2, box.y + box.h / 2, t('Necesita al menos 3 filas'), { anchor: 'middle', size: 12 })); return; }
     const max = niceTicks(0, Math.max(...series.flatMap((s) => s.values.filter((v) => v != null))), 4);
     const R = Math.min(box.w, box.h) / 2 - 34;
     const cx = box.x + box.w / 2, cy = box.y + box.h / 2 + 4;
@@ -429,8 +433,8 @@
       const c = ORD[Math.round((i / Math.max(1, items.length - 1)) * (ORD.length - 1))];
       out.push(`<rect x="${r1(x)}" y="${r1(y)}" width="${r1(w)}" height="${r1(h)}" rx="4" fill="${c}"/>`);
       out.push(text(box.x + labelW - 10, y + h / 2 + 4, l, { anchor: 'end', color: INK.secondary, size: 12 }));
-      out.push(text(area.x + area.w + 10, y + h / 2 + 4, `${fmt(v)}${first ? ` · ${Math.round((v / first) * 100)} %` : ''}`, { color: INK.secondary }));
-      out.push(`<rect class="chart-hit" x="${r1(box.x)}" y="${r1(y)}" width="${r1(box.w)}" height="${r1(h)}" fill="transparent" ${tt(l, [[c, se.name, fmt(v)], [c, 'Respecto a la 1.ª etapa', first ? `${nf.format((v / first) * 100)} %` : '—']])}/>`);
+      out.push(text(area.x + area.w + 10, y + h / 2 + 4, `${fmt(v)}${first ? ` · ${pc(Math.round((v / first) * 100))}` : ''}`, { color: INK.secondary }));
+      out.push(`<rect class="chart-hit" x="${r1(box.x)}" y="${r1(y)}" width="${r1(box.w)}" height="${r1(h)}" fill="transparent" ${tt(l, [[c, se.name, fmt(v)], [c, t('Respecto a la 1.ª etapa'), first ? pc(nf.format((v / first) * 100)) : '—']])}/>`);
     });
   }
 
@@ -471,14 +475,14 @@
     const steps = data.labels.map((l, i) => [l, se.values[i] || 0]);
     let run = 0;
     const bars = steps.map(([l, v]) => { const a = run; run += v; return { l, v, a, b: run }; });
-    bars.push({ l: 'Total', v: run, a: 0, b: run, total: true });
+    bars.push({ l: t('Total'), v: run, a: 0, b: run, total: true });
     const nt = niceTicks(Math.min(0, ...bars.map((b) => Math.min(b.a, b.b))), Math.max(...bars.map((b) => Math.max(b.a, b.b))), 5);
     const yw = Math.max(...nt.ticks.map((t) => textW(fmt(t)))) + 10;
     const plot = { x: box.x + yw, y: box.y + 8, w: box.w - yw - 8, h: box.h - 50 };
     const Y = (v) => plot.y + plot.h - ((v - nt.min) / (nt.max - nt.min)) * plot.h;
     for (const t of nt.ticks) out.push(`<path d="M${r1(plot.x)},${r1(Y(t))}H${r1(plot.x + plot.w)}" stroke="${t === 0 ? INK.axis : INK.grid}"/>`, text(plot.x - 8, Y(t) + 4, fmt(t), { anchor: 'end' }));
     const band = plot.w / bars.length, thick = Math.min(24, band * 0.7);
-    const lg = legend([[POS, 'Sube'], [NEG, 'Baja'], [TOTAL, 'Total']], box.x, box.y + box.h - 4, box.w);
+    const lg = legend([[POS, t('Sube')], [NEG, t('Baja')], [TOTAL, t('Total')]], box.x, box.y + box.h - 4, box.w);
     out.push(lg.svg);
     bars.forEach((b, i) => {
       const x = plot.x + band * (i + 0.5) - thick / 2;
@@ -487,7 +491,7 @@
       out.push(`<path d="${barPath(x, y0, thick, Math.max(1, h), b.v >= 0 || b.total ? 'up' : 'down')}" fill="${c}"/>`);
       if (i < bars.length - 1) out.push(`<path d="M${r1(x + thick)},${r1(Y(b.b))}h${r1(band - thick)}" stroke="${INK.axis}"/>`);
       out.push(text(x + thick / 2, plot.y + plot.h + 16, b.l.length > 10 ? `${b.l.slice(0, 9)}…` : b.l, { anchor: 'middle', color: INK.secondary }));
-      out.push(`<rect class="chart-hit" x="${r1(plot.x + band * i)}" y="${r1(plot.y)}" width="${r1(band)}" height="${r1(plot.h)}" fill="transparent" ${tt(b.l, [[c, b.total ? 'Total' : 'Cambio', fmt(b.v)], [c, 'Acumulado', fmt(b.b)]])}/>`);
+      out.push(`<rect class="chart-hit" x="${r1(plot.x + band * i)}" y="${r1(plot.y)}" width="${r1(band)}" height="${r1(plot.h)}" fill="transparent" ${tt(b.l, [[c, b.total ? t('Total') : t('Cambio'), fmt(b.v)], [c, t('Acumulado'), fmt(b.b)]])}/>`);
     });
   }
 
@@ -497,7 +501,7 @@
     const se = series[0];
     const vals = se.values.filter((v) => v != null);
     const total = vals.reduce((s, v) => s + v, 0);
-    out.push(text(box.x, box.y + 18, `Total de ${se.name}`, { size: 13, color: INK.secondary }));
+    out.push(text(box.x, box.y + 18, t('Total de {name}', { name: se.name }), { size: 13, color: INK.secondary }));
     out.push(text(box.x, box.y + 18 + Math.min(64, box.h * 0.4), fmt(total), { size: Math.min(56, Math.max(28, box.h * 0.32)), color: INK.primary, weight: 600 }));
     if (vals.length >= 2) {
       const sp = { x: box.x, y: box.y + box.h * 0.62, w: box.w, h: box.h * 0.32 };

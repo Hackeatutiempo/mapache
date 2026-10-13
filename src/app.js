@@ -11,6 +11,8 @@
   const Arrange = window.MMArrange;
   const Ink = window.MMInk;
   const Merge = window.MMMerge;
+  const I18n = window.MMI18n;
+  const t = I18n.t;
 
   const $ = (s) => document.querySelector(s);
   const stage = $('#stage');
@@ -32,7 +34,6 @@
   const uid = () => crypto.randomUUID();
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
   const colorOf = (key) => L.PALETTE[key] || key || L.PALETTE.gray;
-  const tr = (s, v) => (window.MMI18n ? window.MMI18n.t(s, v) : v ? s.replace(/\{(\w+)\}/g, (_, k) => v[k]) : s);
 
   // Colores de nota (tonos apagados para el tema oscuro). Morado por defecto.
   const NOTE_COLORS = {
@@ -42,7 +43,7 @@
   const TEXT_SIZES = [['S', 14, 20], ['M', 18, 26], ['L', 28, 36], ['XL', 44, 52]];
   // Formas: paleta del tema (la de las ramas) más blanco y gris. Secciones: tonos menos saturados.
   const SHAPE_COLORS = { white: '#e9ecef', gray: '#6b7685', ...Object.fromEntries(L.PALETTE_ORDER.slice(0, 10).map((k) => [k, L.PALETTE[k]])) };
-  const SHAPE_STYLES = [['fill', 'Relleno'], ['border', 'Borde'], ['dashed', 'Borde discontinuo'], ['none', 'Transparente']];
+  const SHAPE_STYLES = [['fill', t('Relleno')], ['border', t('Borde')], ['dashed', t('Borde discontinuo')], ['none', t('Transparente')]];
   const SECTION_COLORS = { gray: '#6b7685', purple: '#7c6bc0', blue: '#5a7aa6', green: '#5b8a70', yellow: '#a3925a', orange: '#a77b58', red: '#a36262', pink: '#a06388' };
   // Colores para lo seleccionado dentro de un texto, y resaltados semitransparentes (se leen sobre cualquier fondo).
   const FMT_COLORS = { blanco: '#f8fafc', gris: '#9aa5b4', negro: '#1f2937', rojo: '#f87171', naranja: '#fb923c', amarillo: '#facc15',
@@ -121,7 +122,7 @@
 
   function newDoc() {
     const rootId = uid();
-    return { rootId, settings: { layout: 'horizontal', lines: 'curvy' }, nodes: { [rootId]: makeNode(rootId, null, 1, 'Idea central') }, items: {} };
+    return { rootId, settings: { layout: 'horizontal', lines: 'curvy' }, nodes: { [rootId]: makeNode(rootId, null, 1, t('Idea central')) }, items: {} };
   }
 
   function makeNode(id, parentId, order, text = '', style = {}) {
@@ -168,7 +169,7 @@
   const outerSides = (rid = rootOf(selectedId || doc.rootId)) => (mapSettings(doc, rid).layout === 'vertical' ? ['bottom', 'top'] : ['right', 'left']);
 
   function normalizeDoc(d) {
-    if (!d || !d.nodes || !d.rootId || !d.nodes[d.rootId]) throw new Error('Mapa no válido');
+    if (!d || !d.nodes || !d.rootId || !d.nodes[d.rootId]) throw new Error(t('Mapa no válido'));
     d.settings = Object.assign({ layout: 'horizontal', lines: 'curvy' }, d.settings);
     d.settings.origin = d.settings.origin || { x: 0, y: 0 };
     d.items = d.items || {};
@@ -231,7 +232,7 @@
 
   let saveTimer = null;
   function saveSoon() {
-    $('#save-state').textContent = 'Guardando…';
+    $('#save-state').textContent = t('Guardando…');
     clearTimeout(saveTimer);
     saveTimer = setTimeout(saveNow, 350);
   }
@@ -250,9 +251,9 @@
         if (editing || (drag && drag.active) || saveTimer) syncBase = JSON.stringify(rec); // se aplicará al terminar
         else applyBoard(saved);
       } else syncBase = JSON.stringify(saved);
-      $('#save-state').textContent = 'Guardado';
+      $('#save-state').textContent = t('Guardado');
     } catch (err) {
-      $('#save-state').textContent = `No se pudo guardar: ${err.message}`;
+      $('#save-state').textContent = t('No se pudo guardar: {msg}', { msg: err.message });
     }
     await Sidebar.refresh();
     updateHeader();
@@ -299,7 +300,7 @@
     if (e.type === 'board') {
       if (map && e.id === map.id) {
         if (e.deleted && !saveTimer) {
-          toast(tr('Este tablero se ha movido a la papelera desde fuera de la app'));
+          toast(t('Este tablero se ha movido a la papelera desde fuera de la app'));
           const rest = (await Store.all()).sort((a, b) => b.updatedAt - a.updatedAt);
           map = null;
           if (rest.length) await openMap(rest[0].id); else await createMap(null);
@@ -318,9 +319,9 @@
   function updateSaveTip() {
     const s = Store.status();
     const el = $('#save-state');
-    el.title = s.mode === 'online' ? tr('Tus tableros se guardan en {dir}', { dir: s.dataDir || '~/.mapache' })
-      : s.mode === 'offline' ? tr('Sin conexión con Mapache: se guarda en este navegador y se sincroniza al volver')
-        : tr('Se guarda en este navegador');
+    el.title = s.mode === 'online' ? t('Tus tableros se guardan en {dir}', { dir: s.dataDir || '~/.mapache' })
+      : s.mode === 'offline' ? t('Sin conexión con Mapache: se guarda en este navegador y se sincroniza al volver')
+        : t('Se guarda en este navegador');
     el.classList.toggle('offline', s.mode === 'offline');
   }
 
@@ -529,7 +530,7 @@
     if (editing) commitEdit();
     const before = snapshot();
     const id = uid();
-    doc.nodes[id] = makeNode(id, null, 1, 'Idea central');
+    doc.nodes[id] = makeNode(id, null, 1, t('Idea central'));
     doc.nodes[id].map = { layout: 'horizontal', lines: 'curvy', origin: { x: Math.round(at.x), y: Math.round(at.y) } };
     setTool('select');
     selectNode(id, false);
@@ -795,12 +796,12 @@
       const v = sel.vertical;
       if (sel.level === 0) {
         const [a, b2] = outerSides(sel.id);
-        parts.push(qaDot(outerPoint(sel, 20, 1), `data-qa="child" data-side="${a}"`, 'Añadir hijo · Tab'));
-        parts.push(qaDot(outerPoint(sel, 20, -1), `data-qa="child" data-side="${b2}"`, 'Añadir hijo · Tab'));
+        parts.push(qaDot(outerPoint(sel, 20, 1), `data-qa="child" data-side="${a}"`, t('Añadir hijo · Tab')));
+        parts.push(qaDot(outerPoint(sel, 20, -1), `data-qa="child" data-side="${b2}"`, t('Añadir hijo · Tab')));
       } else {
-        parts.push(qaDot(outerPoint(sel, sel.children.length ? 48 : 20), 'data-qa="child"', 'Añadir hijo · Tab'));
+        parts.push(qaDot(outerPoint(sel, sel.children.length ? 48 : 20), 'data-qa="child"', t('Añadir hijo · Tab')));
         const p = v ? { x: sel.x + sel.w + 17, y: sel.y + sel.h / 2 } : { x: sel.x + sel.w / 2, y: sel.y + sel.h + 17 };
-        parts.push(qaDot(p, 'data-qa="sibling"', 'Añadir hermano · Enter'));
+        parts.push(qaDot(p, 'data-qa="sibling"', t('Añadir hermano · Enter')));
       }
     }
     // Tablas: + en el borde derecho (columna) y en el inferior (fila).
@@ -808,8 +809,8 @@
     if (tb && tb.type === 'table' && !tb.locked && !busy) {
       const r = itemRect(tb.id);
       if (r) {
-        parts.push(qaDot({ x: r.x + r.w + 18, y: r.y + r.h / 2 }, 'data-qa="tbl-col"', 'Añadir columna'));
-        parts.push(qaDot({ x: r.x + r.w / 2, y: r.y + r.h + 18 }, 'data-qa="tbl-row"', 'Añadir fila'));
+        parts.push(qaDot({ x: r.x + r.w + 18, y: r.y + r.h / 2 }, 'data-qa="tbl-col"', t('Añadir columna')));
+        parts.push(qaDot({ x: r.x + r.w / 2, y: r.y + r.h + 18 }, 'data-qa="tbl-row"', t('Añadir fila')));
       }
     }
     // Notas: puntos de añadir otra nota a cada lado .
@@ -818,7 +819,7 @@
       const r = itemRect(it.id);
       if (r) {
         const pts = { right: [r.x + r.w + 20, r.y + r.h / 2], left: [r.x - 20, r.y + r.h / 2], down: [r.x + r.w / 2, r.y + r.h + 20], up: [r.x + r.w / 2, r.y - 20] };
-        for (const [dir, [x, y]] of Object.entries(pts)) parts.push(qaDot({ x, y }, `data-qa="note" data-dir="${dir}"`, 'Añadir nota · Alt flecha'));
+        for (const [dir, [x, y]] of Object.entries(pts)) parts.push(qaDot({ x, y }, `data-qa="note" data-dir="${dir}"`, t('Añadir nota · Alt flecha')));
       }
     }
     parts.push(...connectorUI(busy));
@@ -898,7 +899,7 @@
       const r = itemRect(sel.id);
       if (r) {
         const pts = { right: [r.x + r.w + 20, r.y + r.h / 2], left: [r.x - 20, r.y + r.h / 2], down: [r.x + r.w / 2, r.y + r.h + 20], up: [r.x + r.w / 2, r.y - 20] };
-        for (const [dir, [x, y]] of Object.entries(pts)) out.push(qaDot({ x, y }, `data-qa="shape" data-dir="${dir}"`, 'Clic: forma conectada · Arrastrar: conector'));
+        for (const [dir, [x, y]] of Object.entries(pts)) out.push(qaDot({ x, y }, `data-qa="shape" data-dir="${dir}"`, t('Clic: forma conectada · Arrastrar: conector')));
       }
     }
     if (selInks.size) {
@@ -1369,7 +1370,7 @@
     const it = selItem && doc.items[selItem];
     if (!it || !STYLE_KEYS[it.type]) return;
     styleClip = { type: it.type, props: JSON.parse(JSON.stringify(Object.fromEntries(STYLE_KEYS[it.type].map((k) => [k, it[k] ?? null])))) };
-    toast('Estilo copiado');
+    toast(t('Estilo copiado'));
   }
   const styleTargets = () => (styleClip ? (selItem ? [selItem] : [...multi]).filter((id) => doc.items[id] && doc.items[id].type === styleClip.type && !doc.items[id].locked) : []);
   function pasteStyle() {
@@ -1385,7 +1386,7 @@
     else if (it.type === 'text') pref('mindmap:text', JSON.stringify({ size: it.size, color: it.color }));
     else if (it.type === 'conn') pref('mindmap:conn', JSON.stringify({ color: it.color, style: it.style, startCap: it.startCap, endCap: it.endCap, route: it.route }));
     else return;
-    toast('Guardado como estilo por defecto');
+    toast(t('Guardado como estilo por defecto'));
   }
 
   // Enlace a una posición del tablero: al abrirlo se va a ese mapa, centrado en ese punto y con ese zoom.
@@ -1393,7 +1394,7 @@
     const b = multiCount() > 1 ? multiBounds() : selItem ? elemRect(selItem) : selectedId ? layout.boxes[selectedId] : null;
     const c = b ? { x: b.x + b.w / 2, y: b.y + b.h / 2 } : ctxPoint || viewCenter();
     const url = `${location.origin}${location.pathname}#m=${encodeURIComponent(map.id)}&x=${Math.round(c.x)}&y=${Math.round(c.y)}&z=${Math.round(view.k * 100) / 100}`;
-    if (navigator.clipboard) navigator.clipboard.writeText(url).then(() => toast('Enlace copiado'), () => toast(url));
+    if (navigator.clipboard) navigator.clipboard.writeText(url).then(() => toast(t('Enlace copiado')), () => toast(url));
     else toast(url);
   }
 
@@ -1482,28 +1483,28 @@
       : `<line x1="${g.a - ext}" y1="${g.v}" x2="${g.b + ext}" y2="${g.v}" stroke="${GUIDE_COLOR}" stroke-width="${0.8 / k}" stroke-opacity="0.9" shape-rendering="crispEdges"/>`));
   }
 
-  const TYPE_NAMES = { note: 'Notas', text: 'Textos', sticker: 'Stickers', image: 'Imágenes', video: 'Vídeos', shape: 'Formas', section: 'Secciones',
-    table: 'Tablas', chart: 'Gráficos', conn: 'Conectores', ink: 'Trazos', [MAP]: 'Mapas mentales', [NODE]: 'Nodos' };
+  const TYPE_NAMES = { note: t('Notas'), text: t('Textos'), sticker: t('Stickers'), image: t('Imágenes'), video: t('Vídeos'), shape: t('Formas'), section: t('Secciones'),
+    table: t('Tablas'), chart: t('Gráficos'), conn: t('Conectores'), ink: t('Trazos'), [MAP]: t('Mapas mentales'), [NODE]: t('Nodos') };
 
   function multiBar() {
     const n = multiCount();
-    const parts = [btn('menu-multi-filter', `${UI.filter}<b class="cb-count">${n}</b>`, 'Filtrar la selección', { menu: true }), sep];
+    const parts = [btn('menu-multi-filter', `${UI.filter}<b class="cb-count">${n}</b>`, t('Filtrar la selección'), { menu: true }), sep];
     const solid = [...multi].filter((id) => doc.items[id].type !== 'conn').length + multiRoots.size;
     const movable = arrangeable();
     if (movable.length >= 2) {
-      parts.push(btn('multi-arrange', UI.arrangeGrid, 'Organizar en cuadrícula', { arg: 'grid' }));
-      if (linksAmong(movable).length) parts.push(`<span class="cb-group">${btn('multi-arrange', UI.arrangeTree, 'Organizar como árbol', { arg: 'tree' })}${btn('multi-arrange', UI.arrangeMind, 'Organizar como mapa mental', { arg: 'mind' })}</span>`);
+      parts.push(btn('multi-arrange', UI.arrangeGrid, t('Organizar en cuadrícula'), { arg: 'grid' }));
+      if (linksAmong(movable).length) parts.push(`<span class="cb-group">${btn('multi-arrange', UI.arrangeTree, t('Organizar como árbol'), { arg: 'tree' })}${btn('multi-arrange', UI.arrangeMind, t('Organizar como mapa mental'), { arg: 'mind' })}</span>`);
       parts.push(sep);
     }
     if (solid >= 2) {
-      parts.push(`<span class="cb-group">${btn('multi-align', UI.alignLeft, 'Alinear a la izquierda', { arg: 'left' })}${btn('multi-align', UI.alignCenter, 'Centrar en horizontal', { arg: 'center' })}${btn('multi-align', UI.alignRight, 'Alinear a la derecha', { arg: 'right' })}</span>`,
-        `<span class="cb-group">${btn('multi-align', UI.alignTop, 'Alinear arriba', { arg: 'top' })}${btn('multi-align', UI.alignMiddle, 'Centrar en vertical', { arg: 'middle' })}${btn('multi-align', UI.alignBottom, 'Alinear abajo', { arg: 'bottom' })}</span>`);
-      if (solid >= 3) parts.push(`<span class="cb-group">${btn('multi-align', UI.distH, 'Repartir en horizontal', { arg: 'dist-h' })}${btn('multi-align', UI.distV, 'Repartir en vertical', { arg: 'dist-v' })}</span>`);
+      parts.push(`<span class="cb-group">${btn('multi-align', UI.alignLeft, t('Alinear a la izquierda'), { arg: 'left' })}${btn('multi-align', UI.alignCenter, t('Centrar en horizontal'), { arg: 'center' })}${btn('multi-align', UI.alignRight, t('Alinear a la derecha'), { arg: 'right' })}</span>`,
+        `<span class="cb-group">${btn('multi-align', UI.alignTop, t('Alinear arriba'), { arg: 'top' })}${btn('multi-align', UI.alignMiddle, t('Centrar en vertical'), { arg: 'middle' })}${btn('multi-align', UI.alignBottom, t('Alinear abajo'), { arg: 'bottom' })}</span>`);
+      if (solid >= 3) parts.push(`<span class="cb-group">${btn('multi-align', UI.distH, t('Repartir en horizontal'), { arg: 'dist-h' })}${btn('multi-align', UI.distV, t('Repartir en vertical'), { arg: 'dist-v' })}</span>`);
       parts.push(sep);
     }
-    if (multi.size) parts.push(btn('multi-dup', UI.duplicate, 'Duplicar · Ctrl D'), btn('multi-lock', UI.lock, 'Bloquear · Shift L'));
-    if (multi.size || multiNodes.size || [...multiRoots].some((r) => r !== doc.rootId)) parts.push(btn('multi-del', UI.trash, 'Borrar · Supr'));
-    parts.push(btn('menu-multi-more', UI.more, 'Más'));
+    if (multi.size) parts.push(btn('multi-dup', UI.duplicate, t('Duplicar · Ctrl D')), btn('multi-lock', UI.lock, t('Bloquear · Shift L')));
+    if (multi.size || multiNodes.size || [...multiRoots].some((r) => r !== doc.rootId)) parts.push(btn('multi-del', UI.trash, t('Borrar · Supr')));
+    parts.push(btn('menu-multi-more', UI.more, t('Más')));
     return parts.join('');
   }
 
@@ -1592,7 +1593,7 @@
         const empty = it.lines.every((l) => !l);
         rec.text.className = `mm-text tag-${blockAt(it, 0)}${empty ? ' empty-item' : ''}`;
         rec.text.style.textAlign = it.align || '';
-        rec.text.dataset.ph = it.type === 'note' ? 'Escribe una nota…' : it.type === 'text' ? 'Texto' : '';
+        rec.text.dataset.ph = it.type === 'note' ? t('Escribe una nota…') : it.type === 'text' ? t('Texto') : '';
         const sig = `${it.block}|${(it.blocks || []).join(',')}|${it.lines.join('\u0001')}|${it.checked.join(',')}`;
         if (!isEditing && sig !== rec.sig) { rec.text.innerHTML = contentHTML(it); rec.sig = sig; }
         if (it.type === 'shape') fitShapeText(rec, it);
@@ -1966,7 +1967,7 @@
     selCell = null;
     commit(before);
     render();
-    if (rows.length >= Tables.MAX_ROWS) toast(`La tabla se ha recortado a ${Tables.MAX_ROWS} filas`);
+    if (rows.length >= Tables.MAX_ROWS) toast(t('La tabla se ha recortado a {n} filas', { n: Tables.MAX_ROWS }));
     return id;
   }
 
@@ -1974,7 +1975,7 @@
     if (editing) commitEdit();
     const before = snapshot();
     const id = uid();
-    const rows = [[...Array(nc)].map((_, c) => `Columna ${c + 1}`), ...[...Array(nr - 1)].map(() => Array(nc).fill(''))];
+    const rows = [[...Array(nc)].map((_, c) => t('Columna {n}', { n: c + 1 })),...[...Array(nr - 1)].map(() => Array(nc).fill(''))];
     const spot = freeSpot(at.x - (nc * 140) / 2, at.y - (nr * 34) / 2, nc * 140, nr * 34);
     doc.items[id] = { id, type: 'table', x: spot.x, y: spot.y, z: topZ(), rows, cols: Array(nc).fill(140), header: true, striped: false, color: 'gray' };
     setTool('select');
@@ -1989,7 +1990,7 @@
       const parsed = Tables.parse(text) || { rows: text.split(/\r?\n/).filter((l) => l.trim()).map((l) => [l]) };
       createTableFromRows(parsed.rows, at, parsed);
     } catch (err) {
-      uiAlert(`No se pudo importar «${file.name}»: ${err.message}`);
+      uiAlert(t('No se pudo importar «{name}»: {msg}', { name: file.name, msg: err.message }));
     }
   }
 
@@ -2036,7 +2037,7 @@
   function exportCSV(id = selItem) {
     const it = doc.items[id];
     if (!it) return;
-    const name = (titleOf(map) || 'tabla').replace(/[\\/:*?"<>|]+/g, '').slice(0, 50);
+    const name = (titleOf(map) || t('tabla')).replace(/[\\/:*?"<>|]+/g, '').slice(0, 50);
     download(`${name}.csv`, new Blob([Tables.toCSV(it.rows)], { type: 'text/csv;charset=utf-8' }));
   }
 
@@ -2094,11 +2095,11 @@
   }
 
   function createChart(tableId, kind) {
-    const t = doc.items[tableId];
+    const tb = doc.items[tableId];
     const r = itemRect(tableId);
-    if (!t || !r) return;
-    const data = Tables.chartData(t, {}, Charts.parseNumber);
-    const title = data.series.length === 1 ? data.series[0].name : data.series.length ? `${data.series.map((s) => s.name).slice(0, 3).join(', ')}` : 'Gráfico';
+    if (!tb || !r) return;
+    const data = Tables.chartData(tb, {}, Charts.parseNumber);
+    const title = data.series.length === 1 ? data.series[0].name : data.series.length ? `${data.series.map((s) => s.name).slice(0, 3).join(', ')}` : t('Gráfico');
     const before = snapshot();
     const id = uid();
     const spot = freeSpot(r.x + r.w + 60, r.y, 540, 360);
@@ -2140,7 +2141,7 @@
       it = { ...base, shape: kind, w, h, color: last.color || 'purple', style: last.style || 'border', rot: 0, lines: [''], block: 'p', checked: [] };
     } else if (type === 'section') {
       const n = Object.values(doc.items).filter((x) => x.type === 'section').length + 1;
-      it = { ...base, z: 0, w: extra.w || 640, h: extra.h || 420, color: 'gray', fill: false, name: `Sección ${n}` };
+      it = { ...base, z: 0, w: extra.w || 640, h: extra.h || 420, color: 'gray', fill: false, name: t('Sección {n}', { n }) };
     } else if (type === 'video') {
       it = { ...base, w: extra.w || 560, h: extra.h || 315, mediaId: extra.mediaId || null, url: extra.url || null, embed: extra.embed || null, name: extra.name || '' };
     } else it = { ...base, w: extra.w, src: extra.src };
@@ -2249,7 +2250,7 @@
         }
         i++;
       } catch (err) {
-        uiAlert(`No se pudo añadir «${f.name}»: ${err.message}`);
+        uiAlert(t('No se pudo añadir «{name}»: {msg}', { name: f.name, msg: err.message }));
       }
     }
   }
@@ -2271,12 +2272,12 @@
       v.preload = 'metadata';
       v.muted = true;
       v.onloadedmetadata = () => ok([v.videoWidth || 16, v.videoHeight || 9]);
-      v.onerror = () => ko(new Error('el navegador no puede reproducir este formato'));
+      v.onerror = () => ko(new Error(t('el navegador no puede reproducir este formato')));
       v.src = url;
     });
   }
   async function addVideoFile(f, at) {
-    if (f.size > MAX_VIDEO) throw new Error('el vídeo pasa de 500 MB');
+    if (f.size > MAX_VIDEO) throw new Error(t('el vídeo pasa de 500 MB'));
     const id = uid();
     const url = mediaURL(id, f);
     const [vw, vh] = await videoSize(url);
@@ -2316,13 +2317,13 @@
     if (rec.videoSig !== sig) {
       rec.videoSig = sig;
       if (it.embed) {
-        host.innerHTML = `<iframe src="${esc(it.embed)}" title="Vídeo" loading="lazy" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen ` +
+        host.innerHTML = `<iframe src="${esc(it.embed)}" title="${t('Vídeo')}" loading="lazy" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen ` +
           'referrerpolicy="strict-origin-when-cross-origin" sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"></iframe><div class="video-grip"></div>';
       } else {
         host.innerHTML = '<video controls playsinline preload="metadata"></video><div class="video-grip"></div>';
         const v = host.querySelector('video');
         if (it.url) v.src = it.url;
-        else if (it.mediaId) loadMedia(it.mediaId).then((u) => { if (u) v.src = u; else host.innerHTML = '<div class="video-missing">Este vídeo no está en este navegador</div><div class="video-grip"></div>'; });
+        else if (it.mediaId) loadMedia(it.mediaId).then((u) => { if (u) v.src = u; else host.innerHTML = `<div class="video-missing">${t('Este vídeo no está en este navegador')}</div><div class="video-grip"></div>`; });
       }
     }
     rec.el.classList.toggle('is-embed', !!it.embed);
@@ -2763,12 +2764,12 @@
   const btn = (act, icon, tipText, { on = false, menu = false, arg = '', cls = '' } = {}) =>
     `<button class="cb-btn${on ? ' on' : ''}${menu ? ' has-menu' : ''}${cls ? ` ${cls}` : ''}" data-act="${act}" data-arg="${arg}" data-tip="${tipText}">${icon}</button>`;
   const sep = '<span class="cb-sep"></span>';
-  const textTools = (t) => [
-    `<span class="cb-group">${btn('bold', UI.bold, 'Negrita · Ctrl B')}${btn('italic', UI.italic, 'Cursiva · Ctrl I')}${btn('menu-format', UI.kebab, 'Más formato', { cls: 'narrow' })}</span>`,
-    `<span class="cb-group">${btn('block', UI.list, 'Lista de viñetas · *', { on: curBlock(t) === 'ul', arg: 'ul' })}${btn('menu-block', UI.kebab, 'Más tipos de bloque', { cls: 'narrow' })}</span>`,
-    btn('menu-fmt-color', UI.textColor, 'Color y resaltado del texto', { menu: true }),
-    ...(t.type === 'note' || t.type === 'text' || t.type === 'shape' ? [btn('menu-align', UI[`align${(t.align || (t.type === 'shape' ? 'center' : 'left'))[0].toUpperCase()}Text`], 'Alineación del texto', { menu: true })] : []),
-    sep, btn('link', UI.link, 'Añadir enlace · Ctrl Shift U'),
+  const textTools = (tg) => [
+    `<span class="cb-group">${btn('bold', UI.bold, t('Negrita · Ctrl B'))}${btn('italic', UI.italic, t('Cursiva · Ctrl I'))}${btn('menu-format', UI.kebab, t('Más formato'), { cls: 'narrow' })}</span>`,
+    `<span class="cb-group">${btn('block', UI.list, t('Lista de viñetas · *'), { on: curBlock(tg) === 'ul', arg: 'ul' })}${btn('menu-block', UI.kebab, t('Más tipos de bloque'), { cls: 'narrow' })}</span>`,
+    btn('menu-fmt-color', UI.textColor, t('Color y resaltado del texto'), { menu: true }),
+    ...(tg.type === 'note' || tg.type === 'text' || tg.type === 'shape' ? [btn('menu-align', UI[`align${(tg.align || (tg.type === 'shape' ? 'center' : 'left'))[0].toUpperCase()}Text`], t('Alineación del texto'), { menu: true })] : []),
+    sep, btn('link', UI.link, t('Añadir enlace · Ctrl Shift U')),
   ];
 
   // Miniatura de una punta de conector (al final de una línea corta; `atStart` la dibuja a la izquierda).
@@ -2783,69 +2784,69 @@
   function inkBar(it) {
     const color = it ? it.color : doc.items[[...selInks][0]]?.color;
     const thick = it ? it.width >= 6 : false;
-    const parts = [btn('menu-ink-color', `<span class="swatch" style="background:${inkColor(color)}"></span>`, 'Color', { menu: true }),
-      `<span class="cb-group">${btn('ink-width', UI.thin, 'Trazo fino', { on: !thick, arg: '0' })}${btn('ink-width', UI.thick, 'Trazo grueso', { on: thick, arg: '1' })}</span>`, sep];
-    if (it) parts.push(btn('item-dup', UI.duplicate, 'Duplicar · Ctrl D'), btn('menu-item-more', UI.more, 'Más'));
-    else parts.push(btn('ink-del', UI.trash, `Borrar ${selInks.size} trazo${selInks.size === 1 ? '' : 's'} · Supr`));
+    const parts = [btn('menu-ink-color', `<span class="swatch" style="background:${inkColor(color)}"></span>`, t('Color'), { menu: true }),
+      `<span class="cb-group">${btn('ink-width', UI.thin, t('Trazo fino'), { on: !thick, arg: '0' })}${btn('ink-width', UI.thick, t('Trazo grueso'), { on: thick, arg: '1' })}</span>`, sep];
+    if (it) parts.push(btn('item-dup', UI.duplicate, t('Duplicar · Ctrl D')), btn('menu-item-more', UI.more, t('Más')));
+    else parts.push(btn('ink-del', UI.trash, selInks.size === 1 ? t('Borrar 1 trazo · Supr') : t('Borrar {n} trazos · Supr', { n: selInks.size })));
     return parts.join('');
   }
 
   function itemBar(it) {
-    if (it.locked) return btn('item-unlock', UI.lock, 'Desbloquear · Shift L', { on: true });
+    if (it.locked) return btn('item-unlock', UI.lock, t('Desbloquear · Shift L'), { on: true });
     if (it.type === 'ink') return inkBar(it);
     if (it.type === 'conn') {
       const st = it.style || 'solid';
-      return [btn('menu-conn-label', UI.text, 'Texto · doble clic', { on: !!it.label }), sep,
-        btn('menu-conn-color', `<span class="swatch" style="background:${connColor(it)}"></span>`, 'Color', { menu: true }), sep,
-        `<span class="cb-group">${btn('conn-style', UI.solid, 'Continua', { on: st === 'solid', arg: 'solid' })}${btn('conn-style', UI.dash, 'Discontinua', { on: st === 'dashed', arg: 'dashed' })}${btn('conn-style', UI.lineThick, 'Gruesa', { on: st === 'thick', arg: 'thick' })}</span>`, sep,
-        btn('menu-conn-cap', capThumb(it.startCap, true), 'Punta inicial', { menu: true, arg: 'startCap' }),
-        btn('conn-swap', UI.swap, 'Invertir dirección'),
-        btn('menu-conn-cap', capThumb(it.endCap, false), 'Punta final', { menu: true, arg: 'endCap' }), sep,
-        btn('menu-conn-route', routeIcon(it.route), 'Trazado', { menu: true }), sep,
-        btn('item-dup', UI.duplicate, 'Duplicar · Ctrl D'), btn('menu-item-more', UI.more, 'Más')].join('');
+      return [btn('menu-conn-label', UI.text, t('Texto · doble clic'), { on: !!it.label }), sep,
+        btn('menu-conn-color', `<span class="swatch" style="background:${connColor(it)}"></span>`, t('Color'), { menu: true }), sep,
+        `<span class="cb-group">${btn('conn-style', UI.solid, t('Continua'), { on: st === 'solid', arg: 'solid' })}${btn('conn-style', UI.dash, t('Discontinua'), { on: st === 'dashed', arg: 'dashed' })}${btn('conn-style', UI.lineThick, t('Gruesa'), { on: st === 'thick', arg: 'thick' })}</span>`, sep,
+        btn('menu-conn-cap', capThumb(it.startCap, true), t('Punta inicial'), { menu: true, arg: 'startCap' }),
+        btn('conn-swap', UI.swap, t('Invertir dirección')),
+        btn('menu-conn-cap', capThumb(it.endCap, false), t('Punta final'), { menu: true, arg: 'endCap' }), sep,
+        btn('menu-conn-route', routeIcon(it.route), t('Trazado'), { menu: true }), sep,
+        btn('item-dup', UI.duplicate, t('Duplicar · Ctrl D')), btn('menu-item-more', UI.more, t('Más'))].join('');
     }
     const parts = [];
     if (it.type === 'note') {
-      parts.push(...textTools(it), sep, btn('menu-note-color', `<span class="swatch" style="background:${NOTE_COLORS[it.color] || it.color}"></span>`, 'Color de la nota', { menu: true }));
+      parts.push(...textTools(it), sep, btn('menu-note-color', `<span class="swatch" style="background:${NOTE_COLORS[it.color] || it.color}"></span>`, t('Color de la nota'), { menu: true }));
     } else if (it.type === 'text') {
-      parts.push(...textTools(it), sep, btn('menu-text-size', `<b style="font-size:13px">${it.size}</b>`, 'Tamaño del texto', { menu: true }),
-        btn('menu-text-color', `<span class="swatch" style="background:${TEXT_COLORS[it.color] || it.color}"></span>`, 'Color del texto', { menu: true }));
+      parts.push(...textTools(it), sep, btn('menu-text-size', `<b style="font-size:13px">${it.size}</b>`, t('Tamaño del texto'), { menu: true }),
+        btn('menu-text-color', `<span class="swatch" style="background:${TEXT_COLORS[it.color] || it.color}"></span>`, t('Color del texto'), { menu: true }));
     } else if (it.type === 'sticker') {
-      parts.push(btn('menu-sticker', `<span style="font-size:18px">${it.emoji}</span>`, 'Cambiar sticker', { menu: true }));
+      parts.push(btn('menu-sticker', `<span style="font-size:18px">${it.emoji}</span>`, t('Cambiar sticker'), { menu: true }));
     } else if (it.type === 'image') {
-      parts.push(btn('item-download', UI.download, 'Descargar imagen'));
+      parts.push(btn('item-download', UI.download, t('Descargar imagen')));
     } else if (it.type === 'video') {
-      if (!it.embed) parts.push(btn('video-loop', UI.loop, 'Repetir en bucle', { on: !!it.loop }));
-      if (it.mediaId) parts.push(btn('item-download', UI.download, 'Descargar vídeo'));
-      if (it.embed || it.url) parts.push(btn('video-open', UI.external, 'Abrir el original'));
+      if (!it.embed) parts.push(btn('video-loop', UI.loop, t('Repetir en bucle'), { on: !!it.loop }));
+      if (it.mediaId) parts.push(btn('item-download', UI.download, t('Descargar vídeo')));
+      if (it.embed || it.url) parts.push(btn('video-open', UI.external, t('Abrir el original')));
     } else if (it.type === 'table') {
       const cellOn = !!(selCell || (editing && editing.kind === 'cell'));
-      if (cellOn) parts.push(`<span class="cb-group">${btn('bold', UI.bold, 'Negrita · Ctrl B')}${btn('italic', UI.italic, 'Cursiva · Ctrl I')}</span>`, sep);
-      parts.push(btn('menu-table-rows', UI.rowsCols, 'Filas y columnas', { menu: true }),
-        btn('tbl-sort', UI.sortAsc, 'Ordenar A → Z (columna activa)', { arg: 'asc' }), btn('tbl-sort', UI.sortDesc, 'Ordenar Z → A (columna activa)', { arg: 'desc' }), sep,
-        btn('tbl-header', UI.header, 'Fila de encabezado', { on: it.header !== false }), btn('tbl-striped', UI.striped, 'Filas alternas', { on: !!it.striped }),
-        btn('menu-table-color', `<span class="swatch" style="background:${SECTION_COLORS[it.color] || it.color}"></span>`, 'Color', { menu: true }), sep,
-        btn('menu-chart-new', UI.chart, 'Crear gráfico con estos datos', { menu: true }), btn('tbl-csv', UI.csv, 'Exportar CSV'));
+      if (cellOn) parts.push(`<span class="cb-group">${btn('bold', UI.bold, t('Negrita · Ctrl B'))}${btn('italic', UI.italic, t('Cursiva · Ctrl I'))}</span>`, sep);
+      parts.push(btn('menu-table-rows', UI.rowsCols, t('Filas y columnas'), { menu: true }),
+        btn('tbl-sort', UI.sortAsc, t('Ordenar A → Z (columna activa)'), { arg: 'asc' }), btn('tbl-sort', UI.sortDesc, t('Ordenar Z → A (columna activa)'), { arg: 'desc' }), sep,
+        btn('tbl-header', UI.header, t('Fila de encabezado'), { on: it.header !== false }), btn('tbl-striped', UI.striped, t('Filas alternas'), { on: !!it.striped }),
+        btn('menu-table-color', `<span class="swatch" style="background:${SECTION_COLORS[it.color] || it.color}"></span>`, t('Color'), { menu: true }), sep,
+        btn('menu-chart-new', UI.chart, t('Crear gráfico con estos datos'), { menu: true }), btn('tbl-csv', UI.csv, t('Exportar CSV')));
     } else if (it.type === 'chart') {
       const linked = it.tableId && doc.items[it.tableId];
-      parts.push(btn('menu-chart-type', Charts.thumb(it.kind), 'Tipo de gráfico', { menu: true }),
-        btn('menu-chart-data', UI.table, linked ? 'Datos' : 'Datos (tabla borrada)', { menu: true }),
-        btn('menu-chart-title', UI.pencil, 'Título', { menu: true }));
-      if (/^(column|bar)/.test(it.kind)) parts.push(btn('chart-values', `<b style="font-size:12px">123</b>`, 'Mostrar valores', { on: !!it.showValues }));
-      if (linked) parts.push(sep, btn('chart-goto', UI.table, 'Ir a la tabla'));
+      parts.push(btn('menu-chart-type', Charts.thumb(it.kind), t('Tipo de gráfico'), { menu: true }),
+        btn('menu-chart-data', UI.table, linked ? t('Datos') : t('Datos (tabla borrada)'), { menu: true }),
+        btn('menu-chart-title', UI.pencil, t('Título'), { menu: true }));
+      if (/^(column|bar)/.test(it.kind)) parts.push(btn('chart-values', `<b style="font-size:12px">123</b>`, t('Mostrar valores'), { on: !!it.showValues }));
+      if (linked) parts.push(sep, btn('chart-goto', UI.table, t('Ir a la tabla')));
     } else if (it.type === 'shape') {
       parts.push(...textTools(it), sep,
-        btn('menu-shape-type', Shapes.thumb(it.shape), 'Cambiar forma', { menu: true }),
-        btn('menu-shape-color', `<span class="swatch" style="background:${SHAPE_COLORS[it.color] || it.color}"></span>`, 'Color', { menu: true }),
-        btn('menu-shape-style', UI.fill, 'Estilo del borde', { menu: true }),
-        btn('shape-rot', UI.rotate, 'Girar 90°'));
+        btn('menu-shape-type', Shapes.thumb(it.shape), t('Cambiar forma'), { menu: true }),
+        btn('menu-shape-color', `<span class="swatch" style="background:${SHAPE_COLORS[it.color] || it.color}"></span>`, t('Color'), { menu: true }),
+        btn('menu-shape-style', UI.fill, t('Estilo del borde'), { menu: true }),
+        btn('shape-rot', UI.rotate, t('Girar 90°')));
     } else if (it.type === 'section') {
-      return [btn('section-rename', UI.pencil, 'Renombrar · Enter'), sep,
-        btn('menu-section-color', `<span class="swatch" style="background:${SECTION_COLORS[it.color] || it.color}"></span>`, 'Color', { menu: true }),
-        `<span class="cb-group">${btn('section-fill', UI.section, 'Contorno', { on: !it.fill, arg: '0' })}${btn('section-fill', UI.fill, 'Relleno', { on: !!it.fill, arg: '1' })}</span>`,
-        sep, btn('menu-section-more', UI.more, 'Más')].join('');
+      return [btn('section-rename', UI.pencil, t('Renombrar · Enter')), sep,
+        btn('menu-section-color', `<span class="swatch" style="background:${SECTION_COLORS[it.color] || it.color}"></span>`, t('Color'), { menu: true }),
+        `<span class="cb-group">${btn('section-fill', UI.section, t('Contorno'), { on: !it.fill, arg: '0' })}${btn('section-fill', UI.fill, t('Relleno'), { on: !!it.fill, arg: '1' })}</span>`,
+        sep, btn('menu-section-more', UI.more, t('Más'))].join('');
     }
-    parts.push(sep, btn('item-dup', UI.duplicate, 'Duplicar · Ctrl D'), btn('menu-item-more', UI.more, 'Más'));
+    parts.push(sep, btn('item-dup', UI.duplicate, t('Duplicar · Ctrl D')), btn('menu-item-more', UI.more, t('Más')));
     return parts.join('');
   }
 
@@ -2855,16 +2856,16 @@
     const parts = [...textTools(n), sep];
     if (isRoot) {
       const ms = mapSettings(doc, selectedId);
-      parts.push(`<span class="cb-group">${btn('layout', UI.horizontal, 'Horizontal', { on: ms.layout !== 'vertical', arg: 'horizontal' })}${btn('layout', UI.vertical, 'Vertical', { on: ms.layout === 'vertical', arg: 'vertical' })}</span>`);
-      parts.push(`<span class="cb-group">${btn('lines', UI.curvy, 'Curvas', { on: ms.lines !== 'angular', arg: 'curvy' })}${btn('lines', UI.angular, 'En ángulo', { on: ms.lines === 'angular', arg: 'angular' })}</span>`);
+      parts.push(`<span class="cb-group">${btn('layout', UI.horizontal, t('Horizontal'), { on: ms.layout !== 'vertical', arg: 'horizontal' })}${btn('layout', UI.vertical, t('Vertical'), { on: ms.layout === 'vertical', arg: 'vertical' })}</span>`);
+      parts.push(`<span class="cb-group">${btn('lines', UI.curvy, t('Curvas'), { on: ms.lines !== 'angular', arg: 'curvy' })}${btn('lines', UI.angular, t('En ángulo'), { on: ms.lines === 'angular', arg: 'angular' })}</span>`);
     } else {
-      parts.push(`<span class="cb-group">${btn('dash', UI.solid, 'Línea continua', { on: !b.dash, arg: '0' })}${btn('dash', UI.dash, 'Línea discontinua', { on: b.dash, arg: '1' })}</span>`);
-      parts.push(sep, btn('menu-color', `<span class="swatch" style="background:${colorOf(b.color)}"></span>`, 'Color', { menu: true }));
+      parts.push(`<span class="cb-group">${btn('dash', UI.solid, t('Línea continua'), { on: !b.dash, arg: '0' })}${btn('dash', UI.dash, t('Línea discontinua'), { on: b.dash, arg: '1' })}</span>`);
+      parts.push(sep, btn('menu-color', `<span class="swatch" style="background:${colorOf(b.color)}"></span>`, t('Color'), { menu: true }));
     }
-    parts.push(sep, btn('menu-icon', UI.smile, 'Añadir icono · Shift X', { menu: true }));
-    if (b.children.length) parts.push(btn('collapse', UI.collapse, isRoot ? 'Plegar ramas · Ctrl /' : (b.collapsed ? 'Desplegar · Ctrl /' : 'Plegar · Ctrl /')));
-    parts.push(btn('duplicate', UI.duplicate, isRoot ? 'Duplicar el mapa · Ctrl D' : 'Duplicar · Ctrl D'));
-    parts.push(sep, btn('menu-more', UI.more, 'Más'));
+    parts.push(sep, btn('menu-icon', UI.smile, t('Añadir icono · Shift X'), { menu: true }));
+    if (b.children.length) parts.push(btn('collapse', UI.collapse, isRoot ? t('Plegar ramas · Ctrl /') : (b.collapsed ? t('Desplegar · Ctrl /') : t('Plegar · Ctrl /'))));
+    parts.push(btn('duplicate', UI.duplicate, isRoot ? t('Duplicar el mapa · Ctrl D') : t('Duplicar · Ctrl D')));
+    parts.push(sep, btn('menu-more', UI.more, t('Más')));
     return parts.join('');
   }
 
@@ -2914,40 +2915,45 @@
     `<button class="color-dot${current === k ? ' on' : ''}" data-act="${act}" data-arg="${k}" style="background:${c}" data-tip="${k}"></button>`).join('')}`;
 
   function openPopover(kind, anchor) {
-    const t = textTarget();
+    const tg = textTarget();
     const it = selItem && doc.items[selItem];
     let html = '';
     if (kind === 'menu-format') {
-      html = item('strike', 'Tachado', 'Ctrl Shift X') + item('code', 'Código', 'Ctrl Shift K') + item('mark', 'Resaltado', 'Ctrl Shift H');
+      html = item('strike', t('Tachado'), 'Ctrl Shift X') + item('code', t('Código'), 'Ctrl Shift K') + item('mark', t('Resaltado'), 'Ctrl Shift H');
     } else if (kind === 'menu-block') {
-      const blocks = [['p', 'Párrafo'], ['h1', 'Título 1', '#'], ['h2', 'Título 2', '##'], ['h3', 'Título 3', '###'], ['ul', 'Lista de viñetas', '*'], ['ol', 'Lista numerada', '1.'], ['check', 'Checklist', '_']];
-      const cb = t && curBlock(t);
+      const blocks = [['p', t('Párrafo')], ['h1', t('Título 1'), '#'], ['h2', t('Título 2'), '##'], ['h3', t('Título 3'), '###'], ['ul', t('Lista de viñetas'), '*'], ['ol', t('Lista numerada'), '1.'], ['check', t('Checklist'), '_']];
+      const cb = tg && curBlock(tg);
       html = blocks.map(([k, label, kk]) => item('block-set', label, kk || '', k, cb === k)).join('');
     } else if (kind === 'menu-fmt-color') {
       const sw = (act, v, c, tip, cls = '') => `<button class="color-dot${cls}" data-act="${act}" data-arg="${v}" style="background:${c}" data-tip="${tip}"></button>`;
-      html = `<div class="menu-label">Color del texto</div><div class="colors">${sw('fmt', 'color:', 'transparent', 'Sin color', ' none')}` +
-        Object.entries(FMT_COLORS).map(([k, c]) => sw('fmt', `color:${c}`, c, k)).join('') +
-        `</div><div class="menu-label">Resaltado</div><div class="colors">${sw('fmt', 'hilite:', 'transparent', 'Sin resaltado', ' none')}` +
-        Object.entries(FMT_HILITES).map(([k, c]) => sw('fmt', `hilite:${c}`, c, k)).join('') + '</div>';
+      // Las claves de FMT_COLORS son nombres en español: solo se traduce lo que se muestra.
+      html = `<div class="menu-label">${t('Color del texto')}</div><div class="colors">${sw('fmt', 'color:', 'transparent', t('Sin color'), ' none')}` +
+        Object.entries(FMT_COLORS).map(([k, c]) => sw('fmt', `color:${c}`, c, t(k))).join('') +
+        `</div><div class="menu-label">${t('Resaltado')}</div><div class="colors">${sw('fmt', 'hilite:', 'transparent', t('Sin resaltado'), ' none')}` +
+        Object.entries(FMT_HILITES).map(([k, c]) => sw('fmt', `hilite:${c}`, c, t(k))).join('') + '</div>';
     } else if (kind === 'menu-link') {
       const cur = currentLink();
-      html = '<div class="menu-label">Dirección del enlace</div>' +
+      html = `<div class="menu-label">${t('Dirección del enlace')}</div>` +
         `<input class="title-input link-url" placeholder="https://…" spellcheck="false" value="${cur ? esc(cur.getAttribute('href') || '') : ''}" />` +
-        (cur ? item('link-remove', 'Quitar enlace') : '');
+        (cur ? item('link-remove', t('Quitar enlace')) : '');
     } else if (kind === 'menu-media') {
-      html = item('media-file', `${UI.upload} Subir imagen o vídeo…`) + '<div class="menu-sep"></div>' +
-        '<div class="menu-label">O pega el enlace de un vídeo<br>(YouTube, Vimeo, Loom o .mp4)</div>' +
-        '<input class="title-input media-url" placeholder="https://…" spellcheck="false" /><div class="media-hint" hidden>No reconozco ese enlace</div>';
+      html = item('media-file', `${UI.upload} ${t('Subir imagen o vídeo…')}`) + '<div class="menu-sep"></div>' +
+        `<div class="menu-label">${t('O pega el enlace de un vídeo<br>(YouTube, Vimeo, Loom o .mp4)')}</div>` +
+        `<input class="title-input media-url" placeholder="https://…" spellcheck="false" /><div class="media-hint" hidden>${t('No reconozco ese enlace')}</div>`;
     } else if (kind === 'menu-theme') {
-      html = [['dark', 'Oscuro', UI.moon], ['light', 'Claro', UI.sun], ['system', 'Según el sistema', UI.monitor]]
+      html = [['dark', t('Oscuro'), UI.moon], ['light', t('Claro'), UI.sun], ['system', t('Según el sistema'), UI.monitor]]
         .map(([k, label, ic]) => `<button class="menu-item${themePref === k ? ' on' : ''}" data-act="theme" data-arg="${k}">${ic} ${label}</button>`).join('');
+    } else if (kind === 'menu-lang') {
+      // Los nombres de los idiomas van siempre en su propio idioma.
+      html = [['auto', t('Según el navegador'), UI.monitor], ['es', 'Español', UI.globe], ['en', 'English', UI.globe]]
+        .map(([k, label, ic]) => `<button class="menu-item${I18n.pref === k ? ' on' : ''}" data-act="lang" data-arg="${k}">${ic} ${label}</button>`).join('');
     } else if (kind === 'menu-align') {
       const cur = it && (it.align || (it.type === 'shape' ? 'center' : 'left'));
-      html = [['left', 'A la izquierda', UI.alignLText], ['center', 'Centrado', UI.alignCText], ['right', 'A la derecha', UI.alignRText]]
+      html = [['left', t('A la izquierda'), UI.alignLText], ['center', t('Centrado'), UI.alignCText], ['right', t('A la derecha'), UI.alignRText]]
         .map(([k, label, ic]) => `<button class="menu-item${cur === k ? ' on' : ''}" data-act="text-align" data-arg="${k}">${ic} ${label}</button>`).join('');
     } else if (kind === 'menu-color') {
       const b = layout.boxes[selectedId];
-      html = `${dots(L.PALETTE, b.color, 'color')}<label class="color-dot custom" data-tip="Color personalizado">+<input type="color" data-act="color-custom" /></label></div>`;
+      html = `${dots(L.PALETTE, b.color, 'color')}<label class="color-dot custom" data-tip="${t('Color personalizado')}">+<input type="color" data-act="color-custom" /></label></div>`;
     } else if (kind === 'menu-note-color') {
       html = `${dots(NOTE_COLORS, it.color, 'note-color')}</div>`;
     } else if (kind === 'menu-text-color') {
@@ -2956,19 +2962,19 @@
       html = `<div class="size-grid">${TEXT_SIZES.map(([s]) => `<button class="size-btn${it.size === s ? ' on' : ''}" data-act="text-size" data-arg="${s}">${s}</button>`).join('')}</div>`;
     } else if (kind === 'menu-icon' || kind === 'menu-sticker') {
       const act = kind === 'menu-icon' ? 'icon' : 'sticker';
-      html = `<div class="icon-panel"><input class="icon-search" placeholder="${act === 'icon' ? 'Buscar icono…' : 'Buscar sticker…'}" />` +
+      html = `<div class="icon-panel"><input class="icon-search" placeholder="${act === 'icon' ? t('Buscar icono…') : t('Buscar sticker…')}" />` +
         `<div class="icon-results">${iconGrid('', act)}</div>` +
-        (act === 'icon' && t && t.icon ? `<div class="menu-sep"></div>${item('icon', 'Quitar icono', '', '')}` : '') + '</div>';
+        (act === 'icon' && tg && tg.icon ? `<div class="menu-sep"></div>${item('icon', t('Quitar icono'), '', '')}` : '') + '</div>';
     } else if (kind === 'menu-more') {
       const root = selectedId === doc.rootId;
-      html = item('copy', 'Copiar', 'Ctrl C') + (root ? '' : item('cut', 'Cortar', 'Ctrl X')) + item('paste', 'Pegar como hijo', 'Ctrl V') +
-        (root ? '' : item('duplicate', 'Duplicar', 'Ctrl D')) + '<div class="menu-sep"></div>' +
-        item('wrap-section', 'Meter el mapa en una sección') +
-        item('export-png', 'Exportar mapa como PNG') + item('export-svg', 'Exportar mapa como SVG') +
-        (root ? '' : `<div class="menu-sep"></div>${item('delete', 'Borrar', 'Supr')}`);
+      html = item('copy', t('Copiar'), 'Ctrl C') + (root ? '' : item('cut', t('Cortar'), 'Ctrl X')) + item('paste', t('Pegar como hijo'), 'Ctrl V') +
+        (root ? '' : item('duplicate', t('Duplicar'), 'Ctrl D')) + '<div class="menu-sep"></div>' +
+        item('wrap-section', t('Meter el mapa en una sección')) +
+        item('export-png', t('Exportar mapa como PNG')) + item('export-svg', t('Exportar mapa como SVG')) +
+        (root ? '' : `<div class="menu-sep"></div>${item('delete', t('Borrar'), t('Supr'))}`);
     } else if (kind === 'menu-item-more') {
-      html = item('item-front', 'Traer al frente') + item('item-back', 'Enviar detrás del mapa') + item('item-dup', 'Duplicar', 'Ctrl D') +
-        item('wrap-section', 'Meter en sección') + item('item-lock', 'Bloquear', 'Shift L') + '<div class="menu-sep"></div>' + item('item-del', 'Borrar', 'Supr');
+      html = item('item-front', t('Traer al frente')) + item('item-back', t('Enviar detrás del mapa')) + item('item-dup', t('Duplicar'), 'Ctrl D') +
+        item('wrap-section', t('Meter en sección')) + item('item-lock', t('Bloquear'), 'Shift L') + '<div class="menu-sep"></div>' + item('item-del', t('Borrar'), t('Supr'));
     } else if (kind === 'menu-multi-filter') {
       const counts = {};
       for (const id of multi) { const t = doc.items[id].type; counts[t] = (counts[t] || 0) + 1; }
@@ -2976,29 +2982,29 @@
       if (multiNodes.size) counts[NODE] = multiNodes.size;
       html = Object.entries(counts).map(([t, c]) => item('multi-filter', `${TYPE_NAMES[t] || t} <span class="menu-count">${c}</span>`, '', t)).join('');
     } else if (kind === 'menu-multi-more') {
-      html = (multi.size ? item('multi-dup', 'Duplicar', 'Ctrl D') + item('multi-lock', 'Bloquear', 'Shift L') : '') +
-        item('multi-wrap', 'Meter en sección') + '<div class="menu-sep"></div>' + (multi.size ? item('multi-del', 'Borrar', 'Supr') : '');
+      html = (multi.size ? item('multi-dup', t('Duplicar'), 'Ctrl D') + item('multi-lock', t('Bloquear'), 'Shift L') : '') +
+        item('multi-wrap', t('Meter en sección')) + '<div class="menu-sep"></div>' + (multi.size ? item('multi-del', t('Borrar'), t('Supr')) : '');
     } else if (kind === 'menu-shapes' || kind === 'menu-shape-type') {
       const cur = kind === 'menu-shape-type' ? it.shape : null;
       html = `<div class="shape-grid">${Shapes.CATALOG.map(([k, label, key]) =>
         `<button class="shape-cell${cur === k ? ' on' : ''}" data-act="${kind === 'menu-shapes' ? 'shape-pick' : 'shape-type'}" data-arg="${k}" data-tip="${label}${key ? ` · ${key}` : ''}">${Shapes.thumb(k)}</button>`).join('')}</div>`;
     } else if (kind === 'menu-shape-color') {
-      html = `${dots(SHAPE_COLORS, it.color, 'shape-color')}<label class="color-dot custom" data-tip="Color personalizado">+<input type="color" data-act="shape-color-custom" /></label></div>`;
+      html = `${dots(SHAPE_COLORS, it.color, 'shape-color')}<label class="color-dot custom" data-tip="${t('Color personalizado')}">+<input type="color" data-act="shape-color-custom" /></label></div>`;
     } else if (kind === 'menu-shape-style') {
       html = SHAPE_STYLES.map(([k, label]) => item('shape-style', label, '', k, (it.style || 'border') === k)).join('');
     } else if (kind === 'menu-table-new') {
       // Selector de tamaño más importar CSV.
       html = `<div class="table-pick">${[...Array(64)].map((_, i) => `<span data-r="${Math.floor(i / 8) + 1}" data-c="${(i % 8) + 1}"></span>`).join('')}</div>` +
-        '<div class="table-pick-label">Elige el tamaño</div><div class="menu-sep"></div>' +
-        item('table-csv', 'Importar CSV…') + item('table-demo', 'Tabla de ejemplo con gráfico') +
-        '<div class="menu-hint">También puedes pegar (Ctrl+V) una tabla de Excel, Google Sheets, Word, Notion o Markdown, o arrastrar un .csv al lienzo.</div>';
+        `<div class="table-pick-label">${t('Elige el tamaño')}</div><div class="menu-sep"></div>` +
+        item('table-csv', t('Importar CSV…')) + item('table-demo', t('Tabla de ejemplo con gráfico')) +
+        `<div class="menu-hint">${t('También puedes pegar (Ctrl+V) una tabla de Excel, Google Sheets, Word, Notion o Markdown, o arrastrar un .csv al lienzo.')}</div>`;
     } else if (kind === 'menu-table-rows') {
-      html = item('tbl-op', 'Insertar fila encima', '', 'row-above') + item('tbl-op', 'Insertar fila debajo', '', 'row-below') +
-        item('tbl-op', 'Insertar columna a la izquierda', '', 'col-left') + item('tbl-op', 'Insertar columna a la derecha', '', 'col-right') +
-        '<div class="menu-sep"></div>' + item('tbl-op', 'Subir fila', '', 'row-up') + item('tbl-op', 'Bajar fila', '', 'row-down') +
-        item('tbl-op', 'Mover columna a la izquierda', '', 'col-left-move') + item('tbl-op', 'Mover columna a la derecha', '', 'col-right-move') +
-        '<div class="menu-sep"></div>' + item('tbl-op', 'Eliminar fila', 'Ctrl Alt ⌫', 'row-del') + item('tbl-op', 'Eliminar columna', '', 'col-del') +
-        (selCell ? '' : '<div class="menu-hint">Selecciona una celda para elegir qué fila o columna.</div>');
+      html = item('tbl-op', t('Insertar fila encima'), '', 'row-above') + item('tbl-op', t('Insertar fila debajo'), '', 'row-below') +
+        item('tbl-op', t('Insertar columna a la izquierda'), '', 'col-left') + item('tbl-op', t('Insertar columna a la derecha'), '', 'col-right') +
+        '<div class="menu-sep"></div>' + item('tbl-op', t('Subir fila'), '', 'row-up') + item('tbl-op', t('Bajar fila'), '', 'row-down') +
+        item('tbl-op', t('Mover columna a la izquierda'), '', 'col-left-move') + item('tbl-op', t('Mover columna a la derecha'), '', 'col-right-move') +
+        '<div class="menu-sep"></div>' + item('tbl-op', t('Eliminar fila'), 'Ctrl Alt ⌫', 'row-del') + item('tbl-op', t('Eliminar columna'), '', 'col-del') +
+        (selCell ? '' : `<div class="menu-hint">${t('Selecciona una celda para elegir qué fila o columna.')}</div>`);
     } else if (kind === 'menu-table-color') {
       html = `${dots(SECTION_COLORS, it.color, 'tbl-color')}</div>`;
     } else if (kind === 'menu-chart-new' || kind === 'menu-chart-type') {
@@ -3009,24 +3015,24 @@
       const d = chartDataFor(it);
       const head = d.head || [];
       const mark = (on) => `<span class="mark">${on ? '✓' : ''}</span>`;
-      html = '<div class="data-menu"><div class="menu-title">Etiquetas</div>' +
-        head.map((h, c) => `<button class="menu-item" data-act="chart-label" data-arg="${c}">${mark(c === d.labelCol)}${esc(h || `Columna ${c + 1}`)}</button>`).join('') +
-        '<div class="menu-title">Series (valores)</div>' +
-        (d.numericCols || []).filter((c) => c !== d.labelCol).map((c) => `<button class="menu-item" data-act="chart-series" data-arg="${c}">${mark(d.seriesCols.includes(c))}${esc(head[c] || `Columna ${c + 1}`)}</button>`).join('') +
-        (!head.length ? '<div class="menu-hint">La tabla de origen se borró: el gráfico conserva sus últimos datos.</div>' : '') +
-        '<div class="menu-hint">Dispersión: 1.ª serie = X, 2.ª = Y (3.ª = tamaño en burbujas). Como mucho 8 series (3 en dispersión, burbujas y radar).</div></div>';
+      html = `<div class="data-menu"><div class="menu-title">${t('Etiquetas')}</div>` +
+        head.map((h, c) => `<button class="menu-item" data-act="chart-label" data-arg="${c}">${mark(c === d.labelCol)}${esc(h || t('Columna {n}', { n: c + 1 }))}</button>`).join('') +
+        `<div class="menu-title">${t('Series (valores)')}</div>` +
+        (d.numericCols || []).filter((c) => c !== d.labelCol).map((c) => `<button class="menu-item" data-act="chart-series" data-arg="${c}">${mark(d.seriesCols.includes(c))}${esc(head[c] || t('Columna {n}', { n: c + 1 }))}</button>`).join('') +
+        (!head.length ? `<div class="menu-hint">${t('La tabla de origen se borró: el gráfico conserva sus últimos datos.')}</div>` : '') +
+        `<div class="menu-hint">${t('Dispersión: 1.ª serie = X, 2.ª = Y (3.ª = tamaño en burbujas). Como mucho 8 series (3 en dispersión, burbujas y radar).')}</div></div>`;
     } else if (kind === 'menu-conn-label') {
-      html = `<input class="title-input" value="${esc(it.label || '')}" placeholder="Texto del conector" />` +
-        `<div class="menu-sep"></div>${item('conn-label-bg', 'Fondo claro detrás del texto', '', '', !!it.labelBg)}`;
+      html = `<input class="title-input" value="${esc(it.label || '')}" placeholder="${t('Texto del conector')}" />` +
+        `<div class="menu-sep"></div>${item('conn-label-bg', t('Fondo claro detrás del texto'), '', '', !!it.labelBg)}`;
     } else if (kind === 'menu-conn-color') {
-      html = `<div class="colors"><button class="color-dot${!it.color ? ' on' : ''}" data-act="conn-color" data-arg="" style="background:${CONN_COLOR}" data-tip="Por defecto"></button>` +
+      html = `<div class="colors"><button class="color-dot${!it.color ? ' on' : ''}" data-act="conn-color" data-arg="" style="background:${CONN_COLOR}" data-tip="${t('Por defecto')}"></button>` +
         `${Object.entries(SHAPE_COLORS).map(([k, c]) => `<button class="color-dot${it.color === k ? ' on' : ''}" data-act="conn-color" data-arg="${k}" style="background:${c}" data-tip="${k}"></button>`).join('')}</div>`;
     } else if (kind === 'menu-conn-cap') {
       const end = anchor.dataset.arg;
       html = `<div class="cap-grid">${Conn.CAPS.map(([k, label]) =>
         `<button class="cap-cell${it[end] === k ? ' on' : ''}" data-act="conn-cap" data-arg="${end}:${k}" data-tip="${label}">${capThumb(k, end === 'startCap')}</button>`).join('')}</div>`;
     } else if (kind === 'menu-conn-route') {
-      html = [['elbow', 'En codo'], ['curve', 'Curvo'], ['straight', 'Recto']].map(([k, l]) => item('conn-route', `${routeIcon(k)} ${l}`, '', k, (it.route || 'elbow') === k)).join('');
+      html = [['elbow', t('En codo')], ['curve', t('Curvo')], ['straight', t('Recto')]].map(([k, l]) => item('conn-route', `${routeIcon(k)} ${l}`, '', k, (it.route || 'elbow') === k)).join('');
     } else if (kind === 'menu-ink-color' || kind === 'menu-draw-color') {
       // El subrayador no admite los colores más claros .
       const hl = kind === 'menu-draw-color' ? inkPrefs.tool === 'highlighter' : it ? it.hl : false;
@@ -3034,12 +3040,12 @@
       const palette = Object.fromEntries(Object.entries(INK_COLORS).filter(([k]) => !hl || !['white', 'gray'].includes(k)));
       html = `${dots(palette, cur, kind === 'menu-draw-color' ? 'draw-color' : 'ink-color')}</div>`;
     } else if (kind === 'menu-chart-title') {
-      html = `<input class="title-input" value="${esc(it.title || '')}" placeholder="Título del gráfico" />`;
+      html = `<input class="title-input" value="${esc(it.title || '')}" placeholder="${t('Título del gráfico')}" />`;
     } else if (kind === 'menu-section-color') {
       html = `${dots(SECTION_COLORS, it.color, 'section-color')}</div>`;
     } else if (kind === 'menu-section-more') {
-      html = item('section-rename', 'Renombrar', 'Enter') + item('item-dup', 'Duplicar sección vacía') + '<div class="menu-sep"></div>' +
-        item('section-del', 'Borrar sección (deja el contenido)', 'Supr') + item('section-del-all', 'Borrar sección y su contenido');
+      html = item('section-rename', t('Renombrar'), 'Enter') + item('item-dup', t('Duplicar sección vacía')) + '<div class="menu-sep"></div>' +
+        item('section-del', t('Borrar sección (deja el contenido)'), t('Supr')) + item('section-del-all', t('Borrar sección y su contenido'));
     }
     pop.innerHTML = html;
     pop.hidden = false;
@@ -3101,7 +3107,7 @@
         if (!s) return;
         const R = +s.dataset.r, C = +s.dataset.c;
         grid.querySelectorAll('span').forEach((x) => x.classList.toggle('on', +x.dataset.r <= R && +x.dataset.c <= C));
-        label.textContent = `${C} columnas × ${R} filas`;
+        label.textContent = t('{cols} columnas × {rows} filas', { cols: C, rows: R });
       });
       grid.addEventListener('click', (e) => {
         const s = e.target.closest('span');
@@ -3120,14 +3126,16 @@
     }
   }
 
+  // Palabras clave de un icono: en inglés van primero las inglesas (las españolas también encuentran).
+  const iconWords = (words) => (I18n.lang === 'en' ? `${t(words)} ${words}` : words);
   function iconGrid(q, act) {
     const term = q.trim().toLowerCase();
     return NODE_ICONS.map(([cat, list]) => {
-      const hits = list.filter(([, words]) => !term || words.includes(term) || cat.toLowerCase().includes(term));
+      const hits = list.filter(([, words]) => !term || iconWords(words).includes(term) || cat.toLowerCase().includes(term));
       if (!hits.length) return '';
       return `<div class="icon-cat">${cat}</div><div class="icon-grid">${hits.map(([e, words]) =>
-        `<button class="icon-cell" data-act="${act}" data-arg="${e}" data-tip="${words.split(' ')[0]}">${e}</button>`).join('')}</div>`;
-    }).join('') || '<div class="icon-cat">Sin resultados</div>';
+        `<button class="icon-cell" data-act="${act}" data-arg="${e}" data-tip="${iconWords(words).split(' ')[0]}">${e}</button>`).join('')}</div>`;
+    }).join('') || `<div class="icon-cat">${t('Sin resultados')}</div>`;
   }
 
   function closePopover() { pop.hidden = true; pop.innerHTML = ''; pendingSticker = pendingSticker && pop.dataset.kind === 'menu-sticker' ? null : pendingSticker; }
@@ -3143,6 +3151,7 @@
       case 'block-set': closePopover(); return setBlock(arg);
       case 'fmt': closePopover(); return inlineFormat(arg);
       case 'theme': closePopover(); return setThemePref(arg);
+      case 'lang': closePopover(); return setLangPref(arg);
       case 'media-file': closePopover(); return $('#image-file').click();
       case 'link-remove': closePopover(); restoreLinkRange(); return inlineFormat('unlink');
       case 'video-loop': return setItem(selItem, { loop: !doc.items[selItem].loop });
@@ -3263,8 +3272,11 @@
         // Debajo de todo lo que ya hay, para no tapar el mapa.
         const cb = contentBounds();
         const at = { x: cb.x + 280, y: cb.y + cb.h + 220 };
-        const id = createTableFromRows([['Mes', 'Ventas', 'Gastos', 'Margen'], ['Enero', '12.400', '8.100', '4.300'], ['Febrero', '13.900', '8.600', '5.300'],
-          ['Marzo', '15.200', '9.400', '5.800'], ['Abril', '14.100', '9.000', '5.100'], ['Mayo', '17.800', '10.200', '7.600'], ['Junio', '19.300', '11.000', '8.300']], at);
+        // Las cifras se escriben como en el idioma de la interfaz (12.400 · 12,400).
+        const num = (v) => (I18n.lang === 'en' ? v.replace('.', ',') : v);
+        const id = createTableFromRows([[t('Mes'), t('Ventas'), t('Gastos'), t('Margen')], [t('Enero'), '12.400', '8.100', '4.300'], [t('Febrero'), '13.900', '8.600', '5.300'],
+          [t('Marzo'), '15.200', '9.400', '5.800'], [t('Abril'), '14.100', '9.000', '5.100'], [t('Mayo'), '17.800', '10.200', '7.600'], [t('Junio'), '19.300', '11.000', '8.300']]
+          .map((r, i) => (i ? [r[0], ...r.slice(1).map(num)] : r)), at);
         return createChart(id, 'column');
       }
       case 'tbl-op': closePopover(); if (editing) commitEdit(); return tableOp(arg);
@@ -3301,7 +3313,7 @@
       case 'item-download': {
         const it = doc.items[selItem];
         if (it && it.type === 'video' && it.mediaId) { Store.media.get(it.mediaId).then((m) => { if (m) download(m.name || 'video.mp4', m.blob); }); return; }
-        if (it && it.src) download(`imagen.${it.src.slice(11, it.src.indexOf(';')) || 'png'}`, dataUrlToBlob(it.src));
+        if (it && it.src) download(`${t('imagen')}.${it.src.slice(11, it.src.indexOf(';')) || 'png'}`, dataUrlToBlob(it.src));
         return;
       }
       default:
@@ -3339,55 +3351,55 @@
   function ctxHtml() {
     const it = selItem && doc.items[selItem];
     const canStyle = styleTargets().length > 0;
-    const alignSub = cSub(UI.alignLeft, 'Alinear',
-      cItem('multi-align', UI.alignLeft, 'A la izquierda', '', 'left') + cItem('multi-align', UI.alignCenter, 'Al centro', '', 'center') + cItem('multi-align', UI.alignRight, 'A la derecha', '', 'right') + cSep +
-      cItem('multi-align', UI.alignTop, 'Arriba', '', 'top') + cItem('multi-align', UI.alignMiddle, 'En medio', '', 'middle') + cItem('multi-align', UI.alignBottom, 'Abajo', '', 'bottom') + cSep +
-      cItem('multi-align', UI.distH, 'Repartir en horizontal', '', 'dist-h') + cItem('multi-align', UI.distV, 'Repartir en vertical', '', 'dist-v'));
+    const alignSub = cSub(UI.alignLeft, t('Alinear'),
+      cItem('multi-align', UI.alignLeft, t('A la izquierda'), '', 'left') + cItem('multi-align', UI.alignCenter, t('Al centro'), '', 'center') + cItem('multi-align', UI.alignRight, t('A la derecha'), '', 'right') + cSep +
+      cItem('multi-align', UI.alignTop, t('Arriba'), '', 'top') + cItem('multi-align', UI.alignMiddle, t('En medio'), '', 'middle') + cItem('multi-align', UI.alignBottom, t('Abajo'), '', 'bottom') + cSep +
+      cItem('multi-align', UI.distH, t('Repartir en horizontal'), '', 'dist-h') + cItem('multi-align', UI.distV, t('Repartir en vertical'), '', 'dist-v'));
     if (multiCount() > 1) {
       const movable = arrangeable();
       const solid = [...multi].filter((id) => doc.items[id].type !== 'conn').length + multiRoots.size;
-      const organize = cItem('multi-front', UI.front, 'Traer al frente') + cItem('multi-bottom', UI.back, 'Enviar al fondo') +
-        (movable.length >= 2 ? cSep + cItem('multi-arrange', UI.arrangeGrid, 'En cuadrícula', '', 'grid') +
-          (linksAmong(movable).length ? cItem('multi-arrange', UI.arrangeTree, 'Como árbol', '', 'tree') + cItem('multi-arrange', UI.arrangeMind, 'Como mapa mental', '', 'mind') : '') : '');
-      return (multi.size ? cItem('copy', UI.copy, 'Copiar', 'Ctrl C') + cItem('cut', UI.cut, 'Cortar', 'Ctrl X') + cItem('multi-dup', UI.duplicate, 'Duplicar', 'Ctrl D') + cItem('multi-del', UI.trash, 'Borrar', 'Supr') + cSep
-        : multiNodes.size ? cItem('multi-del', UI.trash, multiNodes.size === 1 ? 'Borrar el nodo' : `Borrar ${multiNodes.size} nodos`, 'Supr') + cSep : '') +
-        cItem('style-paste', UI.brush, 'Pegar estilo', 'Ctrl Alt V', '', !canStyle) + cSep +
-        cSub(UI.front, 'Organizar', organize) + (solid >= 2 ? alignSub : '') + cSep +
-        (multi.size ? cItem('multi-lock', UI.lock, 'Bloquear', 'Shift L') + cSep : '') +
-        cItem('multi-wrap', UI.section, 'Meter en sección') + cSep +
-        cItem('snap-grid', UI.snap, 'Ajustar a la cuadrícula') + cItem('copy-link', UI.link, 'Copiar enlace a esta posición');
+      const organize = cItem('multi-front', UI.front, t('Traer al frente')) + cItem('multi-bottom', UI.back, t('Enviar al fondo')) +
+        (movable.length >= 2 ? cSep + cItem('multi-arrange', UI.arrangeGrid, t('En cuadrícula'), '', 'grid') +
+          (linksAmong(movable).length ? cItem('multi-arrange', UI.arrangeTree, t('Como árbol'), '', 'tree') + cItem('multi-arrange', UI.arrangeMind, t('Como mapa mental'), '', 'mind') : '') : '');
+      return (multi.size ? cItem('copy', UI.copy, t('Copiar'), 'Ctrl C') + cItem('cut', UI.cut, t('Cortar'), 'Ctrl X') + cItem('multi-dup', UI.duplicate, t('Duplicar'), 'Ctrl D') + cItem('multi-del', UI.trash, t('Borrar'), t('Supr')) + cSep
+        : multiNodes.size ? cItem('multi-del', UI.trash, multiNodes.size === 1 ? t('Borrar el nodo') : t('Borrar {n} nodos', { n: multiNodes.size }), t('Supr')) + cSep : '') +
+        cItem('style-paste', UI.brush, t('Pegar estilo'), 'Ctrl Alt V', '', !canStyle) + cSep +
+        cSub(UI.front, t('Organizar'), organize) + (solid >= 2 ? alignSub : '') + cSep +
+        (multi.size ? cItem('multi-lock', UI.lock, t('Bloquear'), 'Shift L') + cSep : '') +
+        cItem('multi-wrap', UI.section, t('Meter en sección')) + cSep +
+        cItem('snap-grid', UI.snap, t('Ajustar a la cuadrícula')) + cItem('copy-link', UI.link, t('Copiar enlace a esta posición'));
     }
     if (it && it.locked) {
-      return cItem('item-unlock', UI.lock, 'Desbloquear', 'Shift L') + cSep + cItem('copy', UI.copy, 'Copiar', 'Ctrl C') + cItem('copy-link', UI.link, 'Copiar enlace a esta posición');
+      return cItem('item-unlock', UI.lock, t('Desbloquear'), 'Shift L') + cSep + cItem('copy', UI.copy, t('Copiar'), 'Ctrl C') + cItem('copy-link', UI.link, t('Copiar enlace a esta posición'));
     }
     if (it) {
-      let h = cItem('copy', UI.copy, 'Copiar', 'Ctrl C') + cItem('cut', UI.cut, 'Cortar', 'Ctrl X') + cItem('item-dup', UI.duplicate, 'Duplicar', 'Ctrl D') + cItem('item-del', UI.trash, 'Borrar', 'Supr');
-      if (it.type === 'conn') h += cSep + cItem('conn-swap', UI.swap, 'Invertir dirección') + (Array.isArray(it.chans) ? cItem('conn-reset', UI.elbow, 'Volver a la ruta automática') : '');
+      let h = cItem('copy', UI.copy, t('Copiar'), 'Ctrl C') + cItem('cut', UI.cut, t('Cortar'), 'Ctrl X') + cItem('item-dup', UI.duplicate, t('Duplicar'), 'Ctrl D') + cItem('item-del', UI.trash, t('Borrar'), t('Supr'));
+      if (it.type === 'conn') h += cSep + cItem('conn-swap', UI.swap, t('Invertir dirección')) + (Array.isArray(it.chans) ? cItem('conn-reset', UI.elbow, t('Volver a la ruta automática')) : '');
       if (STYLE_KEYS[it.type]) {
-        h += cSep + cItem('style-copy', UI.copy, 'Copiar estilo', 'Ctrl Alt C') + cItem('style-paste', UI.brush, 'Pegar estilo', 'Ctrl Alt V', '', !canStyle) +
-          (['shape', 'note', 'text', 'conn'].includes(it.type) ? cItem('style-default', UI.bookmark, 'Guardar como estilo por defecto') : '');
+        h += cSep + cItem('style-copy', UI.copy, t('Copiar estilo'), 'Ctrl Alt C') + cItem('style-paste', UI.brush, t('Pegar estilo'), 'Ctrl Alt V', '', !canStyle) +
+          (['shape', 'note', 'text', 'conn'].includes(it.type) ? cItem('style-default', UI.bookmark, t('Guardar como estilo por defecto')) : '');
       }
       if (it.type !== 'conn') {
-        h += cSep + cSub(UI.front, 'Organizar', cItem('item-front', UI.front, 'Traer al frente') + cItem('item-bottom', UI.back, 'Enviar al fondo') +
-          (it.type !== 'section' ? cItem('item-back', UI.back, 'Enviar detrás del mapa') : ''));
+        h += cSep + cSub(UI.front, t('Organizar'), cItem('item-front', UI.front, t('Traer al frente')) + cItem('item-bottom', UI.back, t('Enviar al fondo')) +
+          (it.type !== 'section' ? cItem('item-back', UI.back, t('Enviar detrás del mapa')) : ''));
       }
-      h += cSep + cItem('item-lock', UI.lock, 'Bloquear', 'Shift L');
-      if (it.type !== 'conn') h += cSep + cItem('wrap-section', UI.section, 'Meter en sección') + cSep + cItem('snap-grid', UI.snap, 'Ajustar a la cuadrícula');
-      return h + cItem('copy-link', UI.link, 'Copiar enlace a esta posición');
+      h += cSep + cItem('item-lock', UI.lock, t('Bloquear'), 'Shift L');
+      if (it.type !== 'conn') h += cSep + cItem('wrap-section', UI.section, t('Meter en sección')) + cSep + cItem('snap-grid', UI.snap, t('Ajustar a la cuadrícula'));
+      return h + cItem('copy-link', UI.link, t('Copiar enlace a esta posición'));
     }
     if (selectedId) {
       const root = selectedId === doc.rootId;
       const b = layout.boxes[selectedId];
-      return cItem('copy', UI.copy, 'Copiar', 'Ctrl C') + (root ? '' : cItem('cut', UI.cut, 'Cortar', 'Ctrl X')) + cItem('paste', UI.paste, 'Pegar como hijo', 'Ctrl V', '', !clipboard) +
-        (root ? '' : cItem('duplicate', UI.duplicate, 'Duplicar', 'Ctrl D') + cItem('delete', UI.trash, 'Borrar', 'Supr')) + cSep +
-        cItem('ctx-add-child', UI.plus, 'Añadir hijo', 'Tab') + (root ? '' : cItem('ctx-add-sibling', UI.plus, 'Añadir hermano')) +
-        (b && b.children.length ? cItem('collapse', UI.collapse, b.collapsed ? 'Desplegar' : 'Plegar', 'Ctrl /') : '') + cSep +
-        cItem('wrap-section', UI.section, 'Meter el mapa en una sección') + cItem('export-png', UI.download, 'Exportar mapa como PNG') + cItem('copy-link', UI.link, 'Copiar enlace a esta posición');
+      return cItem('copy', UI.copy, t('Copiar'), 'Ctrl C') + (root ? '' : cItem('cut', UI.cut, t('Cortar'), 'Ctrl X')) + cItem('paste', UI.paste, t('Pegar como hijo'), 'Ctrl V', '', !clipboard) +
+        (root ? '' : cItem('duplicate', UI.duplicate, t('Duplicar'), 'Ctrl D') + cItem('delete', UI.trash, t('Borrar'), t('Supr'))) + cSep +
+        cItem('ctx-add-child', UI.plus, t('Añadir hijo'), 'Tab') + (root ? '' : cItem('ctx-add-sibling', UI.plus, t('Añadir hermano'))) +
+        (b && b.children.length ? cItem('collapse', UI.collapse, b.collapsed ? t('Desplegar') : t('Plegar'), 'Ctrl /') : '') + cSep +
+        cItem('wrap-section', UI.section, t('Meter el mapa en una sección')) + cItem('export-png', UI.download, t('Exportar mapa como PNG')) + cItem('copy-link', UI.link, t('Copiar enlace a esta posición'));
     }
-    return cItem('paste', UI.paste, 'Pegar aquí', 'Ctrl V', '', !clipboard) + cItem('select-all', UI.cursor, 'Seleccionar todo', 'Ctrl A') + cSep +
-      cItem('ctx-place', UI.map, 'Mapa mental', 'M', 'mindmap') + cItem('ctx-place', UI.note, 'Nota', 'N', 'note') + cItem('ctx-place', UI.shape, 'Forma', 'R', 'shape:rect') + cItem('ctx-place', UI.text, 'Texto', 'T', 'text') +
-      cItem('ctx-place', UI.sticker, 'Sticker', 'X', 'sticker') + cItem('ctx-place', UI.image, 'Imagen o vídeo', 'I', 'image') + cItem('ctx-place', UI.table, 'Tabla', 'E', 'table') + cItem('ctx-place', UI.section, 'Sección', '.', 'section') + cSep +
-      cItem('ctx-fit', UI.fit, 'Ver todo', '1') + cItem('ctx-zoom100', UI.size, 'Zoom al 100 %', '0') + cItem('copy-link', UI.link, 'Copiar enlace a esta posición');
+    return cItem('paste', UI.paste, t('Pegar aquí'), 'Ctrl V', '', !clipboard) + cItem('select-all', UI.cursor, t('Seleccionar todo'), 'Ctrl A') + cSep +
+      cItem('ctx-place', UI.map, t('Mapa mental'), 'M', 'mindmap') + cItem('ctx-place', UI.note, t('Nota'), 'N', 'note') + cItem('ctx-place', UI.shape, t('Forma'), 'R', 'shape:rect') + cItem('ctx-place', UI.text, t('Texto'), 'T', 'text') +
+      cItem('ctx-place', UI.sticker, t('Sticker'), 'X', 'sticker') + cItem('ctx-place', UI.image, t('Imagen o vídeo'), 'I', 'image') + cItem('ctx-place', UI.table, t('Tabla'), 'E', 'table') + cItem('ctx-place', UI.section, t('Sección'), '.', 'section') + cSep +
+      cItem('ctx-fit', UI.fit, t('Ver todo'), '1') + cItem('ctx-zoom100', UI.size, t('Zoom al 100 %'), '0') + cItem('copy-link', UI.link, t('Copiar enlace a esta posición'));
   }
 
   function closeCtx() { ctx.hidden = true; ctx.innerHTML = ''; }
@@ -3487,7 +3499,7 @@
     const nodes = [];
     const rootId = uid();
     const many = rows.length > 1 && rows.every((r) => /^\s/.test(r) === /^\s/.test(rows[0]));
-    const top = makeNode(rootId, null, 1, many ? 'Pegado' : rows[0].trim());
+    const top = makeNode(rootId, null, 1, many ? t('Pegado') : rows[0].trim());
     nodes.push(top);
     const body = many ? rows : rows.slice(1);
     const stack = [{ depth: -1, id: rootId }];
@@ -3894,7 +3906,7 @@
       render();
       const r = stageRect();
       sizeTip.hidden = false;
-      sizeTip.textContent = `${Math.round(f * 100)} %`;
+      sizeTip.textContent = t('{n} %', { n: Math.round(f * 100) });
       sizeTip.style.left = `${e.clientX - r.left + 14}px`;
       sizeTip.style.top = `${e.clientY - r.top + 14}px`;
       return;
@@ -4360,7 +4372,7 @@
 
   // ---------- Mapas ----------
 
-  const titleOf = (m) => (m.title && m.title.trim()) || plainText(m.doc.nodes[m.doc.rootId]).trim() || 'Sin título';
+  const titleOf = (m) => (m.title && m.title.trim()) || plainText(m.doc.nodes[m.doc.rootId]).trim() || t('Sin título');
 
   function updateHeader() {
     if (!map) return;
@@ -4413,7 +4425,7 @@
 
   async function deleteMap(id) {
     const m = await Store.get(id);
-    if (!m || !(await uiConfirm(`Se borrará «${titleOf(m)}» con todo lo que contiene. No se puede deshacer.`, { title: '¿Borrar el mapa?', ok: 'Borrar', danger: true }))) return;
+    if (!m || !(await uiConfirm(t('Se borrará «{name}» con todo lo que contiene. No se puede deshacer.', { name: titleOf(m) }), { title: t('¿Borrar el mapa?'), ok: t('Borrar'), danger: true }))) return;
     await Store.remove(id);
     if (map && map.id === id) {
       map = null;
@@ -4451,7 +4463,7 @@
     if (saveTimer) await saveNow();
     const m = await Store.get(id);
     if (!m) return;
-    const copy = { ...JSON.parse(JSON.stringify(m)), id: uid(), title: `${titleOf(m)} (copia)`, createdAt: Date.now(), updatedAt: Date.now() };
+    const copy = { ...JSON.parse(JSON.stringify(m)), id: uid(), title: t('{name} (copia)', { name: titleOf(m) }), createdAt: Date.now(), updatedAt: Date.now() };
     await Store.put(copy);
     await openMap(copy.id);
   }
@@ -4500,7 +4512,7 @@
         if (rec) media[it.mediaId] = { type: rec.type, name: rec.name, data: await blobToDataURL(rec.blob) };
       }
     }
-    download(`mapache-copia-${date}.json`, new Blob([JSON.stringify({ app: 'mapache', version: 4, folders, maps: all, media }, null, 2)], { type: 'application/json' }));
+    download(t('mapache-copia-{date}.json', { date }),new Blob([JSON.stringify({ app: 'mapache', version: 4, folders, maps: all, media }, null, 2)], { type: 'application/json' }));
   }
 
   async function importBackup(file) {
@@ -4513,10 +4525,10 @@
         normalizeDoc(m.doc);
         await Store.put({ id: m.id || uid(), title: m.title || '', folderId: m.folderId || null, doc: m.doc, createdAt: m.createdAt || Date.now(), updatedAt: m.updatedAt || Date.now() });
       }
-      toast(`Importados ${list.length} mapa(s) y ${(data.folders || []).length} carpeta(s)`);
+      toast(t('Importados {maps} mapa(s) y {folders} carpeta(s)', { maps: list.length, folders: (data.folders || []).length }));
       if (list[0] && list[0].id) await openMap(list[0].id); else await Sidebar.refresh();
     } catch (err) {
-      uiAlert(`No se pudo importar: ${err.message}`);
+      uiAlert(t('No se pudo importar: {msg}', { msg: err.message }));
     }
   }
 
@@ -4553,18 +4565,18 @@
   }
 
   async function exportImage(kind) {
-    const name = (titleOf(map) || 'mapa').replace(/[\\/:*?"<>|]+/g, '').slice(0, 60);
+    const name = (titleOf(map) || t('mapa')).replace(/[\\/:*?"<>|]+/g, '').slice(0, 60);
     try {
       download(`${name}.${kind}`, await buildImage(kind));
     } catch (err) {
-      uiAlert(`No se pudo crear la imagen (${err.message}). Prueba a exportar en SVG.`);
+      uiAlert(t('No se pudo crear la imagen ({msg}). Prueba a exportar en SVG.', { msg: err.message }));
     }
   }
 
   // ---------- Diálogos (en lugar de los cuadros del navegador) ----------
 
   const dialogEl = $('#dialog');
-  function uiDialog(msg, { ok = 'Aceptar', cancel = null, danger = false, title = '' } = {}) {
+  function uiDialog(msg, { ok = t('Aceptar'), cancel = null, danger = false, title = '' } = {}) {
     return new Promise((resolve) => {
       dialogEl.querySelector('.dialog-title').textContent = title;
       dialogEl.querySelector('.dialog-title').hidden = !title;
@@ -4596,7 +4608,7 @@
     });
   }
   const uiAlert = (msg, opts) => uiDialog(msg, opts);
-  const uiConfirm = (msg, opts = {}) => uiDialog(msg, { cancel: 'Cancelar', ...opts });
+  const uiConfirm = (msg, opts = {}) => uiDialog(msg, { cancel: t('Cancelar'), ...opts });
 
   // ---------- Tema claro u oscuro ----------
 
@@ -4629,6 +4641,15 @@
   }
   prefersLight.addEventListener('change', () => { if (themePref === 'system') applyTheme(); });
 
+  // ---------- Idioma ----------
+  // Automático (según el navegador), español o inglés. Cambiarlo guarda lo pendiente y recarga la página.
+  async function setLangPref(v) {
+    if (v === I18n.pref) return;
+    if (editing) commitEdit();
+    if (saveTimer) await saveNow();
+    I18n.setLang(v);
+  }
+
   // ---------- Barra superior, zoom y ayuda ----------
 
   function toggleHelp() { help.hidden = !help.hidden; }
@@ -4657,17 +4678,17 @@
     const std = { mcpServers: { mapache: { command: node, args: [bin, 'mcp'] } } };
     const tabs = [
       ['claude-code', 'Claude Code', `claude mcp add --scope user mapache -- ${q(node)} ${q(bin)} mcp`,
-        tr('Ejecútalo en una terminal y abre una conversación nueva de Claude Code.')],
+        t('Ejecútalo en una terminal y abre una conversación nueva de Claude Code.')],
       ['claude-desktop', 'Claude Desktop', json(std),
-        tr('En Claude Desktop: Ajustes > Desarrollador > Editar configuración. Añade esto a claude_desktop_config.json y reinicia Claude.')],
+        t('En Claude Desktop: Ajustes > Desarrollador > Editar configuración. Añade esto a claude_desktop_config.json y reinicia Claude.')],
       ['codex', 'Codex', `codex mcp add mapache -- ${q(node)} ${q(bin)} mcp`,
-        tr('Codex es el agente de OpenAI (incluido en los planes de ChatGPT). Ejecútalo en una terminal y abre una sesión nueva.')],
-      ['cursor', 'Cursor', json(std), tr('Añádelo a ~/.cursor/mcp.json (o en Cursor: Ajustes > MCP).')],
+        t('Codex es el agente de OpenAI (incluido en los planes de ChatGPT). Ejecútalo en una terminal y abre una sesión nueva.')],
+      ['cursor', 'Cursor', json(std), t('Añádelo a ~/.cursor/mcp.json (o en Cursor: Ajustes > MCP).')],
       ['vscode', 'VS Code', json({ servers: { mapache: { type: 'stdio', command: node, args: [bin, 'mcp'] } } }),
-        tr('En VS Code: paleta de comandos > «MCP: Open User Configuration», y pega esto.')],
-      ['gemini', 'Gemini CLI', `gemini mcp add mapache ${q(node)} ${q(bin)} mcp`, tr('Ejecútalo en una terminal y abre una sesión nueva.')],
+        t('En VS Code: paleta de comandos > «MCP: Open User Configuration», y pega esto.')],
+      ['gemini', 'Gemini CLI', `gemini mcp add mapache ${q(node)} ${q(bin)} mcp`, t('Ejecútalo en una terminal y abre una sesión nueva.')],
       ['chatgpt', 'ChatGPT', `${q(node)} ${q(bin)} help`,
-        tr('ChatGPT en la web o el móvil no llega solo a tu ordenador. Usa Codex, o conecta ChatGPT con tu ordenador mediante Desktop Commander y pídele que use la línea de comandos de Mapache (esta orden muestra la ayuda).')],
+        t('ChatGPT en la web o el móvil no llega solo a tu ordenador. Usa Codex, o conecta ChatGPT con tu ordenador mediante Desktop Commander y pídele que use la línea de comandos de Mapache (esta orden muestra la ayuda).')],
     ];
     const cur = tabs.find((x) => x[0] === agentTab) || tabs[0];
     $('#agent-tabs').innerHTML = tabs.map(([k, name]) => `<button role="tab" data-agent-tab="${k}" aria-selected="${k === cur[0]}">${esc(name)}</button>`).join('');
@@ -4675,12 +4696,12 @@
     $('#agent-hint').textContent = cur[3];
     const dir = info && info.appDir ? info.appDir : '~/Mapache';
     const guide = info && info.appDir ? `${info.appDir}${info.appDir.includes('\\') ? '\\' : '/'}AGENTS.md` : `${REPO_URL}/blob/main/AGENTS.md`;
-    $('#agent-prompt').textContent = tr('Conecta Mapache contigo como servidor MCP. Está instalado en {dir}. Sigue la sección «Connect Mapache to your AI agent» de {guide}. Cuando esté conectado, dime cómo usarlo.', { dir, guide });
+    $('#agent-prompt').textContent = t('Conecta Mapache contigo como servidor MCP. Está instalado en {dir}. Sigue la sección «Connect Mapache to your AI agent» de {guide}. Cuando esté conectado, dime cómo usarlo.', { dir, guide });
     const where = $('#agent-where');
     const s = Store.status();
     where.classList.toggle('warn', s.mode !== 'online');
-    where.textContent = s.mode === 'online' ? tr('Tus tableros se guardan en {dir}. Tu agente usa esos mismos archivos.', { dir: s.dataDir })
-      : tr('Ahora Mapache no está en marcha en este ordenador. Ábrelo con «Abrir Mapache» (o npm start) para que tu agente y esta pestaña compartan los tableros.');
+    where.textContent = s.mode === 'online' ? t('Tus tableros se guardan en {dir}. Tu agente usa esos mismos archivos.', { dir: s.dataDir })
+      : t('Ahora Mapache no está en marcha en este ordenador. Ábrelo con «Abrir Mapache» (o npm start) para que tu agente y esta pestaña compartan los tableros.');
   }
   agentBox.addEventListener('click', async (e) => {
     if (e.target === agentBox) return toggleAgent();
@@ -4689,7 +4710,7 @@
     const b = e.target.closest('[data-copy]');
     if (b) {
       const text = $(`#${b.dataset.copy}`).textContent;
-      try { await navigator.clipboard.writeText(text); toast(tr('Copiado')); } catch { toast(tr('No se pudo copiar: selecciónalo y cópialo a mano')); }
+      try { await navigator.clipboard.writeText(text); toast(t('Copiado')); } catch { toast(t('No se pudo copiar: selecciónalo y cópialo a mano')); }
     }
   });
   for (const el of agentBox.querySelectorAll('[data-icon]')) el.innerHTML = UI[el.dataset.icon] || '';
@@ -4710,9 +4731,13 @@
   setIcon('#export-png', UI.image);
   $('#theme-btn').addEventListener('click', (e) => openPopover('menu-theme', e.currentTarget));
   applyTheme();
-  setIcon('#agent-open', UI.sparkles, tr('Conectar agente de IA'));
-  setIcon('#backup-export', UI.download, 'Exportar copia de seguridad');
-  setIcon('#backup-import', UI.upload, 'Importar copia');
+  setIcon('#lang-btn', UI.globe);
+  $('#lang-btn').dataset.tip = t('Idioma: {name}', { name: I18n.lang === 'en' ? 'English' : 'Español' });
+  $('#lang-btn').setAttribute('aria-label', $('#lang-btn').dataset.tip);
+  $('#lang-btn').addEventListener('click', (e) => openPopover('menu-lang', e.currentTarget));
+  setIcon('#agent-open', UI.sparkles, t('Conectar agente de IA'));
+  setIcon('#backup-export', UI.download, t('Exportar copia de seguridad'));
+  setIcon('#backup-import', UI.upload, t('Importar copia'));
   for (const [cmd, icon] of [['undo', UI.undo], ['redo', UI.redo], ['zoom-out', UI.minus], ['zoom-in', UI.plus], ['fit', UI.fit], ['help', UI.help], ['about', UI.info]]) {
     const el = document.querySelector(`#zoombar [data-cmd="${cmd}"]`);
     if (el) el.innerHTML = icon;

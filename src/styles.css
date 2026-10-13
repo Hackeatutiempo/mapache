@@ -345,7 +345,8 @@ body.no-sidebar #sidebar { display: none; }
 .mm-text.empty.tag-p .ln:first-child::before,
 .mm-text.empty.tag-h1 .ln:first-child::before,
 .mm-text.empty.tag-h2 .ln:first-child::before,
-.mm-text.empty.tag-h3 .ln:first-child::before { content: "Sin título"; color: var(--placeholder); }
+.mm-text.empty.tag-h3 .ln:first-child::before { content: var(--untitled, "Sin título"); color: var(--placeholder); }
+:root:lang(en) { --untitled: "Untitled"; }
 .editing .mm-text.empty .ln:first-child::before { content: none; }
 .editing .mm-text.empty .ln.b-ul:first-child::before { content: "•"; }
 

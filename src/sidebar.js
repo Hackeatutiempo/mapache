@@ -1,6 +1,7 @@
 // Barra lateral: carpetas anidadas y mapas, con menú contextual, renombrar y arrastrar para mover.
 (function (root) {
   'use strict';
+  const t = root.MMI18n.t;
   let api;
   let folders = [];
   let maps = [];
@@ -32,8 +33,8 @@
     l.addEventListener('drop', onDrop);
     document.addEventListener('pointerdown', (e) => { if (!e.target.closest('#side-menu')) closeMenu(); });
     document.querySelector('#new-map').addEventListener('click', (e) => openMenu(e.currentTarget, [
-      ['Nuevo mapa', () => api.createMap(null)],
-      ['Nueva carpeta', () => newFolder(null)],
+      [t('Nuevo mapa'), () => api.createMap(null)],
+      [t('Nueva carpeta'), () => newFolder(null)],
     ]));
   }
 
@@ -61,8 +62,8 @@
         rows.push(`<div class="row folder" draggable="true" data-folder="${f.id}" style="--d:${depth}">` +
           `<span class="chev${f.collapsed ? '' : ' open'}">${UI.chevron}</span>${rowIcon(f, 'folder')}` +
           `<span class="name">${esc(f.name)}</span><span class="count">${count || ''}</span>` +
-          `<button class="row-btn" data-add="${f.id}" title="Nuevo mapa aquí">${UI.plus}</button>` +
-          `<button class="row-btn" data-more-folder="${f.id}" title="Opciones">${UI.more}</button></div>`);
+          `<button class="row-btn" data-add="${f.id}" title="${t('Nuevo mapa aquí')}">${UI.plus}</button>` +
+          `<button class="row-btn" data-more-folder="${f.id}" title="${t('Opciones')}">${UI.more}</button></div>`);
         if (!f.collapsed) walk(f.id, depth + 1);
       }
       const ms = maps.filter((m) => (m.folderId || null) === parentId).sort((a, b) => b.updatedAt - a.updatedAt);
@@ -70,11 +71,11 @@
         const active = m.id === api.currentId();
         rows.push(`<div class="row map${active ? ' active' : ''}" draggable="true" data-map="${m.id}" style="--d:${depth}">` +
           `<span class="chev"></span>${rowIcon(m, 'map')}<span class="name">${esc(active ? api.currentTitle() : api.titleOf(m))}</span>` +
-          `<button class="row-btn" data-more-map="${m.id}" title="Opciones">${UI.more}</button></div>`);
+          `<button class="row-btn" data-more-map="${m.id}" title="${t('Opciones')}">${UI.more}</button></div>`);
       }
     };
     walk(null, 0);
-    list().innerHTML = rows.join('') || '<div class="empty-list">Sin mapas todavía</div>';
+    list().innerHTML = rows.join('') || `<div class="empty-list">${t('Sin mapas todavía')}</div>`;
   }
 
   function countMaps(folderId) {
@@ -101,7 +102,7 @@
   // ---------- Acciones ----------
 
   async function newFolder(parentId) {
-    const f = { id: uid(), name: 'Nueva carpeta', parentId, collapsed: false, createdAt: Date.now() };
+    const f = { id: uid(), name: t('Nueva carpeta'), parentId, collapsed: false, createdAt: Date.now() };
     await api.Store.folders.put(f);
     if (parentId) expandTo(parentId);
     await refresh();
@@ -142,7 +143,7 @@
 
   async function deleteFolder(id) {
     const f = folders.find((x) => x.id === id);
-    if (!(await api.confirm(`Sus mapas y subcarpetas no se borran: pasan a la carpeta superior.`, { title: `¿Borrar la carpeta «${f.name}»?`, ok: 'Borrar carpeta', danger: true }))) return;
+    if (!(await api.confirm(t('Sus mapas y subcarpetas no se borran: pasan a la carpeta superior.'), { title: t('¿Borrar la carpeta «{name}»?', { name: f.name }), ok: t('Borrar carpeta'), danger: true }))) return;
     for (const sub of folders.filter((x) => x.parentId === id)) { sub.parentId = f.parentId || null; await api.Store.folders.put(sub); }
     for (const m of maps.filter((x) => x.folderId === id)) await api.moveMap(m.id, f.parentId || null);
     await api.Store.folders.remove(id);
@@ -160,7 +161,7 @@
 
   // Lista de destinos para «Mover a…»: todas las carpetas con sangría.
   function destinations(exclude = new Set()) {
-    const out = [['Sin carpeta', null, 0]];
+    const out = [[t('Sin carpeta'), null, 0]];
     const walk = (parentId, depth) => {
       for (const f of folders.filter((x) => (x.parentId || null) === parentId).sort(byName)) {
         if (exclude.has(f.id)) continue;
@@ -180,25 +181,25 @@
 
   function folderMenu(anchor, id) {
     openMenu(anchor, [
-      ['Nuevo mapa aquí', () => api.createMap(id)],
-      ['Nueva subcarpeta', () => newFolder(id)],
-      ['Renombrar', () => rename('folder', id)],
-      ['Personalizar…', () => picker(anchor, 'folder', id)],
-      ['Mover a…', () => moveMenu(anchor, 'folder', id)],
+      [t('Nuevo mapa aquí'), () => api.createMap(id)],
+      [t('Nueva subcarpeta'), () => newFolder(id)],
+      [t('Renombrar'), () => rename('folder', id)],
+      [t('Personalizar…'), () => picker(anchor, 'folder', id)],
+      [t('Mover a…'), () => moveMenu(anchor, 'folder', id)],
       null,
-      ['Borrar carpeta', () => deleteFolder(id), 'danger'],
+      [t('Borrar carpeta'), () => deleteFolder(id), 'danger'],
     ]);
   }
 
   function mapMenu(anchor, id) {
     openMenu(anchor, [
-      ['Abrir', () => api.openMap(id)],
-      ['Renombrar', () => rename('map', id)],
-      ['Personalizar…', () => picker(anchor, 'map', id)],
-      ['Duplicar', () => api.duplicateMap(id)],
-      ['Mover a…', () => moveMenu(anchor, 'map', id)],
+      [t('Abrir'), () => api.openMap(id)],
+      [t('Renombrar'), () => rename('map', id)],
+      [t('Personalizar…'), () => picker(anchor, 'map', id)],
+      [t('Duplicar'), () => api.duplicateMap(id)],
+      [t('Mover a…'), () => moveMenu(anchor, 'map', id)],
       null,
-      ['Borrar mapa', () => api.deleteMap(id), 'danger'],
+      [t('Borrar mapa'), () => api.deleteMap(id), 'danger'],
     ]);
   }
 
@@ -217,10 +218,10 @@
     const m = menu();
     const draw = () => {
       const tint = COLORS[x.color] || '';
-      m.innerHTML = `<div class="pick-title">Color</div><div class="pick-colors">` +
-        `<button class="pick-color none${!x.color ? ' on' : ''}" data-color="" title="Sin color"></button>` +
+      m.innerHTML = `<div class="pick-title">${t('Color')}</div><div class="pick-colors">` +
+        `<button class="pick-color none${!x.color ? ' on' : ''}" data-color="" title="${t('Sin color')}"></button>` +
         Object.entries(COLORS).map(([k, c]) => `<button class="pick-color${x.color === k ? ' on' : ''}" data-color="${k}" style="background:${c}" title="${k}"></button>`).join('') +
-        `</div><div class="pick-title">Icono</div><div class="pick-icons"${tint ? ` style="color:${tint}"` : ''}>` +
+        `</div><div class="pick-title">${t('Icono')}</div><div class="pick-icons"${tint ? ` style="color:${tint}"` : ''}>` +
         Object.entries(SIDE_ICONS).map(([k, svg]) => `<button class="pick-icon${x.icon === `svg:${k}` || (!x.icon && k === (kind === 'folder' ? 'folder' : 'map')) ? ' on' : ''}" data-icon="${k === (kind === 'folder' ? 'folder' : 'map') ? '' : `svg:${k}`}">${svg}</button>`).join('') +
         `</div><div class="pick-icons emojis">` +
         SIDE_EMOJIS.map((e) => `<button class="pick-icon${x.icon === e ? ' on' : ''}" data-icon="${esc(e)}">${esc(e)}</button>`).join('') + '</div>';
@@ -290,7 +291,7 @@
     const mr = e.target.closest('[data-map]');
     if (!fr && !mr) {
       e.preventDefault();
-      return openMenu(null, [['Nuevo mapa', () => api.createMap(null)], ['Nueva carpeta', () => newFolder(null)]], { x: e.clientX, y: e.clientY });
+      return openMenu(null, [[t('Nuevo mapa'), () => api.createMap(null)], [t('Nueva carpeta'), () => newFolder(null)]], { x: e.clientX, y: e.clientY });
     }
     e.preventDefault();
     const anchor = { getBoundingClientRect: () => ({ left: e.clientX, top: e.clientY, bottom: e.clientY }) };

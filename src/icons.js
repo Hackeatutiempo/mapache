@@ -1,6 +1,7 @@
 // Iconos de interfaz (SVG en línea) y catálogo de iconos para los nodos.
 (function (root) {
   'use strict';
+  const t = root.MMI18n.t;
   const svg = (body) => `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`;
 
   const UI = {
@@ -107,15 +108,16 @@
   };
 
   // Iconos para nodos: emoji agrupados por categoría con palabras clave para buscar.
+  // Las palabras clave en inglés están en i18n-en.js (con la española como clave).
   const NODE_ICONS = [
-    ['Stickers', [['🎉', 'fiesta celebrar'], ['💯', 'cien perfecto'], ['👏', 'aplauso bravo'], ['🙌', 'genial'], ['💪', 'fuerza animo'], ['😍', 'encanta'], ['🤯', 'alucinante'], ['😂', 'risa'], ['😎', 'guay'], ['🤔', 'pensar duda'], ['😴', 'aburrido sueño'], ['🥳', 'fiesta'], ['👋', 'hola'], ['👉', 'señalar aqui'], ['🎁', 'regalo'], ['🧨', 'explosivo'], ['💎', 'valor premium'], ['🪄', 'magia'], ['📍', 'ubicacion'], ['🔔', 'aviso campana'], ['🎬', 'video cine'], ['🎨', 'diseño arte'], ['📚', 'libros estudio'], ['🍕', 'pizza']]],
-    ['Estado', [['✅', 'hecho ok check listo'], ['❌', 'no error cancelado'], ['⚠️', 'aviso atencion riesgo'], ['❓', 'pregunta duda'], ['❗', 'importante'], ['⭐', 'estrella favorito'], ['🔥', 'urgente fuego caliente'], ['🚧', 'en obras en curso'], ['⏳', 'pendiente espera tiempo'], ['🔒', 'bloqueado privado'], ['🟢', 'verde ok'], ['🟡', 'amarillo medio'], ['🔴', 'rojo mal'], ['🏁', 'meta final']]],
-    ['Ideas', [['💡', 'idea bombilla'], ['🧠', 'cerebro pensar'], ['🎯', 'objetivo meta diana'], ['🚀', 'lanzamiento cohete'], ['✨', 'magia nuevo ia'], ['🧩', 'pieza puzzle'], ['🔍', 'buscar investigar'], ['📌', 'fijar nota'], ['🗺️', 'mapa plan'], ['🌱', 'crecer inicio']]],
-    ['Trabajo', [['📅', 'calendario fecha'], ['⏰', 'reloj hora alarma'], ['📊', 'grafico datos metricas'], ['📈', 'crecimiento subir'], ['📉', 'bajar'], ['💰', 'dinero ventas'], ['💳', 'pago tarjeta'], ['🧾', 'factura recibo'], ['📦', 'producto paquete'], ['🛒', 'compra tienda'], ['🤝', 'acuerdo trato cliente'], ['📣', 'marketing anuncio'], ['📝', 'notas escribir'], ['📁', 'carpeta archivo'], ['🗂️', 'organizar'], ['⚙️', 'ajustes sistema proceso'], ['🔧', 'herramienta arreglar'], ['🧪', 'prueba test experimento'], ['🏆', 'premio logro']]],
-    ['Personas', [['👤', 'persona usuario'], ['👥', 'equipo grupo'], ['🙋', 'voluntario'], ['👀', 'revisar mirar'], ['💬', 'chat mensaje comentario'], ['📞', 'llamada telefono'], ['✉️', 'email correo'], ['🎓', 'formacion aprender curso'], ['❤️', 'amor gustar'], ['👍', 'bien aprobar']]],
-    ['Tecnología', [['💻', 'ordenador portatil'], ['📱', 'movil app'], ['🌐', 'web internet'], ['🤖', 'ia robot bot'], ['🔗', 'enlace link'], ['🗄️', 'base de datos servidor'], ['☁️', 'nube cloud'], ['🔐', 'seguridad'], ['🐞', 'bug error'], ['🎥', 'video grabar'], ['🎙️', 'audio podcast'], ['📷', 'foto camara']]],
-    ['Naturaleza', [['☀️', 'sol'], ['🌙', 'luna noche'], ['🌊', 'agua mar'], ['🌳', 'arbol'], ['🌸', 'flor'], ['🐶', 'perro'], ['🐱', 'gato'], ['🦊', 'zorro'], ['🍎', 'manzana comida'], ['☕', 'cafe']]],
-    ['Flechas', [['➡️', 'derecha siguiente'], ['⬅️', 'izquierda'], ['⬆️', 'arriba'], ['⬇️', 'abajo'], ['🔄', 'ciclo repetir'], ['↩️', 'volver'], ['🔀', 'mezclar alternativa']]],
+    [t('Stickers'), [['🎉', 'fiesta celebrar'], ['💯', 'cien perfecto'], ['👏', 'aplauso bravo'], ['🙌', 'genial'], ['💪', 'fuerza animo'], ['😍', 'encanta'], ['🤯', 'alucinante'], ['😂', 'risa'], ['😎', 'guay'], ['🤔', 'pensar duda'], ['😴', 'aburrido sueño'], ['🥳', 'fiesta'], ['👋', 'hola'], ['👉', 'señalar aqui'], ['🎁', 'regalo'], ['🧨', 'explosivo'], ['💎', 'valor premium'], ['🪄', 'magia'], ['📍', 'ubicacion'], ['🔔', 'aviso campana'], ['🎬', 'video cine'], ['🎨', 'diseño arte'], ['📚', 'libros estudio'], ['🍕', 'pizza']]],
+    [t('Estado'), [['✅', 'hecho ok check listo'], ['❌', 'no error cancelado'], ['⚠️', 'aviso atencion riesgo'], ['❓', 'pregunta duda'], ['❗', 'importante'], ['⭐', 'estrella favorito'], ['🔥', 'urgente fuego caliente'], ['🚧', 'en obras en curso'], ['⏳', 'pendiente espera tiempo'], ['🔒', 'bloqueado privado'], ['🟢', 'verde ok'], ['🟡', 'amarillo medio'], ['🔴', 'rojo mal'], ['🏁', 'meta final']]],
+    [t('Ideas'), [['💡', 'idea bombilla'], ['🧠', 'cerebro pensar'], ['🎯', 'objetivo meta diana'], ['🚀', 'lanzamiento cohete'], ['✨', 'magia nuevo ia'], ['🧩', 'pieza puzzle'], ['🔍', 'buscar investigar'], ['📌', 'fijar nota'], ['🗺️', 'mapa plan'], ['🌱', 'crecer inicio']]],
+    [t('Trabajo'), [['📅', 'calendario fecha'], ['⏰', 'reloj hora alarma'], ['📊', 'grafico datos metricas'], ['📈', 'crecimiento subir'], ['📉', 'bajar'], ['💰', 'dinero ventas'], ['💳', 'pago tarjeta'], ['🧾', 'factura recibo'], ['📦', 'producto paquete'], ['🛒', 'compra tienda'], ['🤝', 'acuerdo trato cliente'], ['📣', 'marketing anuncio'], ['📝', 'notas escribir'], ['📁', 'carpeta archivo'], ['🗂️', 'organizar'], ['⚙️', 'ajustes sistema proceso'], ['🔧', 'herramienta arreglar'], ['🧪', 'prueba test experimento'], ['🏆', 'premio logro']]],
+    [t('Personas'), [['👤', 'persona usuario'], ['👥', 'equipo grupo'], ['🙋', 'voluntario'], ['👀', 'revisar mirar'], ['💬', 'chat mensaje comentario'], ['📞', 'llamada telefono'], ['✉️', 'email correo'], ['🎓', 'formacion aprender curso'], ['❤️', 'amor gustar'], ['👍', 'bien aprobar']]],
+    [t('Tecnología'), [['💻', 'ordenador portatil'], ['📱', 'movil app'], ['🌐', 'web internet'], ['🤖', 'ia robot bot'], ['🔗', 'enlace link'], ['🗄️', 'base de datos servidor'], ['☁️', 'nube cloud'], ['🔐', 'seguridad'], ['🐞', 'bug error'], ['🎥', 'video grabar'], ['🎙️', 'audio podcast'], ['📷', 'foto camara']]],
+    [t('Naturaleza'), [['☀️', 'sol'], ['🌙', 'luna noche'], ['🌊', 'agua mar'], ['🌳', 'arbol'], ['🌸', 'flor'], ['🐶', 'perro'], ['🐱', 'gato'], ['🦊', 'zorro'], ['🍎', 'manzana comida'], ['☕', 'cafe']]],
+    [t('Flechas'), [['➡️', 'derecha siguiente'], ['⬅️', 'izquierda'], ['⬆️', 'arriba'], ['⬇️', 'abajo'], ['🔄', 'ciclo repetir'], ['↩️', 'volver'], ['🔀', 'mezclar alternativa']]],
   ];
 
   // Iconos para personalizar carpetas y mapas en la barra lateral.

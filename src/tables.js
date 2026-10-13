@@ -1,6 +1,7 @@
 // Tablas: lectura de CSV/TSV/Markdown/HTML, exportación a CSV y datos para los gráficos.
 (function (root) {
   'use strict';
+  const t = root.MMI18n.t;
   const MAX_ROWS = 500, MAX_COLS = 50;
 
   const strip = (html) => { const t = document.createElement('template'); t.innerHTML = html; return t.content.textContent.replace(/ /g, ' ').trim(); };
@@ -96,7 +97,7 @@
   function chartData(table, opts, parseNumber) {
     const rows = table.rows.map((r) => r.map(strip));
     const hasHeader = table.header !== false;
-    const head = hasHeader ? rows[0] : rows[0].map((_, i) => `Columna ${i + 1}`);
+    const head = hasHeader ? rows[0] : rows[0].map((_, i) => t('Columna {n}', { n: i + 1 }));
     const body = hasHeader ? rows.slice(1) : rows;
     const cols = head.length;
     const numericCol = (c) => {
@@ -109,8 +110,8 @@
     const seriesCols = (opts.seriesCols && opts.seriesCols.filter((c) => c < cols && c !== labelCol)) || auto;
     return {
       head, labelCol, seriesCols, numericCols: auto,
-      labels: body.map((r, i) => (labelCol >= 0 ? r[labelCol] || `Fila ${i + 1}` : `Fila ${i + 1}`)),
-      series: seriesCols.map((c) => ({ name: head[c] || `Columna ${c + 1}`, col: c, values: body.map((r) => parseNumber(r[c])) })),
+      labels: body.map((r, i) => (labelCol >= 0 ? r[labelCol] || t('Fila {n}', { n: i + 1 }) : t('Fila {n}', { n: i + 1 }))),
+      series: seriesCols.map((c) => ({ name: head[c] || t('Columna {n}', { n: c + 1 }), col: c, values: body.map((r) => parseNumber(r[c])) })),
     };
   }
 

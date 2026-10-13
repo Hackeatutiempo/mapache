@@ -2,6 +2,8 @@
 // puntas de flecha y posición del texto sobre la línea. Sin DOM: se puede probar en Node.
 (function (root) {
   'use strict';
+  // Textos de la interfaz (en Node, para las pruebas, se quedan en español).
+  const t = (root.MMI18n && root.MMI18n.t) || ((s) => s);
   const GAP = 6; // separación entre el objeto y el extremo del conector
   const OUT = 24; // tramo recto inicial al salir de un lado (rutas en codo)
   const NORMAL = { top: [0, -1], right: [1, 0], bottom: [0, 1], left: [-1, 0] };
@@ -269,8 +271,8 @@
   }
 
   // Puntas: 8 tipos más ninguna. Devuelve SVG en la punta `p` mirando hacia `d`.
-  const CAPS = [['none', 'Ninguna'], ['arrow', 'Flecha'], ['triangle', 'Triángulo'], ['triangle-open', 'Triángulo vacío'], ['circle', 'Círculo'],
-    ['circle-open', 'Círculo vacío'], ['diamond', 'Rombo'], ['diamond-open', 'Rombo vacío'], ['bar', 'Barra']];
+  const CAPS = [['none', t('Ninguna')], ['arrow', t('Flecha')], ['triangle', t('Triángulo')], ['triangle-open', t('Triángulo vacío')], ['circle', t('Círculo')],
+    ['circle-open', t('Círculo vacío')], ['diamond', t('Rombo')], ['diamond-open', t('Rombo vacío')], ['bar', t('Barra')]];
 
   function cap(kind, p, d, color, width, surface) {
     if (!kind || kind === 'none') return '';

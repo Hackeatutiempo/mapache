@@ -36,7 +36,7 @@
       const out = fn(t.objectStore(store));
       t.oncomplete = () => resolve(out && 'result' in out ? out.result : out);
       t.onerror = () => reject(t.error);
-      t.onabort = () => reject(t.error || new Error('Transacción cancelada'));
+      t.onabort = () => reject(t.error || new Error(root.MMI18n.t('Transacción cancelada')));
     });
   }
 
