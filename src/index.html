@@ -19,6 +19,7 @@
     </div>
     <nav id="map-list" aria-label="Tus mapas y carpetas"></nav>
     <div class="side-foot">
+      <button id="agent-open" class="side-link agent-link" data-cmd="agent" data-tip="Que tu agente de IA lea y cree tableros"></button>
       <button id="backup-export" class="side-link" data-tip="Descarga todos tus mapas en un archivo"></button>
       <button id="backup-import" class="side-link" data-tip="Recupera mapas desde una copia"></button>
       <input id="backup-file" type="file" accept=".json,application/json" hidden />
@@ -112,6 +113,27 @@
       <div class="modal-foot"><button class="ghost" data-dlg="cancel">Cancelar</button><button class="primary" data-dlg="ok">Aceptar</button></div>
     </div>
   </div>
+  <div id="agent" class="modal" hidden>
+    <div class="modal-card agent-card" role="dialog" aria-modal="true" aria-labelledby="agent-title">
+      <button class="icon-btn about-close" data-cmd="agent" aria-label="Cerrar" data-icon="close"></button>
+      <div class="agent-head">
+        <span class="agent-badge" data-icon="sparkles"></span>
+        <div>
+          <h2 id="agent-title">Conecta tu agente de IA</h2>
+          <p class="agent-sub">Claude, Codex, Cursor o cualquier agente compatible con MCP puede leer tus tableros y crear mapas mentales, notas y diagramas por ti. Verás sus cambios aquí al momento.</p>
+        </div>
+      </div>
+      <h3>La forma fácil</h3>
+      <p class="agent-step">Copia esto y pégaselo a tu agente:</p>
+      <div class="agent-code"><pre id="agent-prompt"></pre><button class="ghost agent-copy" data-copy="agent-prompt">Copiar</button></div>
+      <h3>O conéctalo tú</h3>
+      <div class="agent-tabs" id="agent-tabs" role="tablist"></div>
+      <div class="agent-code"><pre id="agent-snippet"></pre><button class="ghost agent-copy" data-copy="agent-snippet">Copiar</button></div>
+      <p class="agent-hint" id="agent-hint"></p>
+      <p class="agent-where" id="agent-where"></p>
+    </div>
+  </div>
+
   <div id="about" class="modal" hidden>
     <div class="modal-card about-card" role="dialog" aria-modal="true" aria-labelledby="about-title">
       <button class="icon-btn about-close" data-cmd="about" aria-label="Cerrar" data-icon="close"></button>
@@ -218,6 +240,7 @@
   <script src="connectors.js"></script>
   <script src="arrange.js"></script>
   <script src="ink.js"></script>
+  <script src="merge.js"></script>
   <script src="store.js"></script>
   <script src="sidebar.js"></script>
   <script src="app.js"></script>

@@ -152,6 +152,7 @@ body.no-sidebar #sidebar { display: none; }
 #map-title:hover { border-color: var(--bar-border); }
 #map-title:focus { outline: none; border-color: var(--accent); background: var(--bg); }
 #save-state { color: var(--muted); font-size: 12px; }
+#save-state.offline { color: #f59e0b; }
 .top-actions { margin-left: auto; display: flex; gap: 4px; }
 .icon-btn { width: 32px; height: 32px; display: inline-grid; place-items: center; border-radius: 7px; color: var(--ui-ink); }
 .icon-btn:hover { background: var(--btn-hover); }
@@ -522,6 +523,30 @@ kbd { font: 600 10.5px var(--ui-font); background: var(--kbd); color: var(--kbd-
 .primary.danger { background: #dc2626; }
 .link-url { width: 300px; margin: 2px 4px 6px; }
 #dialog { z-index: 80; }
+
+/* Conectar tu agente de IA */
+.agent-link { color: var(--accent-ink); }
+.agent-link svg { color: var(--accent-soft); }
+.agent-card { width: min(620px, calc(100vw - 32px)); position: relative; padding: 24px 26px 20px; max-height: 92vh; overflow: auto; }
+.agent-head { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 14px; padding-right: 26px; }
+.agent-head h2 { margin: 2px 0 6px; }
+.agent-badge { width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; flex: none; background: var(--sel-bg); color: var(--accent-ink); }
+.agent-badge svg { width: 22px; height: 22px; }
+.agent-sub { margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--muted); }
+.agent-card h3 { margin: 14px 0 6px; }
+.agent-step { margin: 0 0 6px; font-size: 13px; }
+.agent-code { position: relative; }
+.agent-code pre { margin: 0; padding: 12px 84px 12px 12px; border-radius: 10px; background: var(--panel-2); border: 1px solid var(--line);
+  font: 12.5px/1.5 ui-monospace, "Cascadia Code", Consolas, monospace; color: var(--ink); white-space: pre-wrap; word-break: break-word; user-select: text; }
+#agent-prompt { font-family: inherit; font-size: 13px; line-height: 1.55; }
+.agent-copy { position: absolute; top: 8px; right: 8px; padding: 5px 12px; font-size: 12.5px; }
+.agent-tabs { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
+.agent-tabs button { padding: 5px 10px; border-radius: 999px; font-size: 12.5px; color: var(--muted); border: 1px solid var(--line); }
+.agent-tabs button:hover { color: var(--ink); background: var(--btn-hover); }
+.agent-tabs button[aria-selected="true"] { color: var(--accent-ink); background: var(--sel-bg); border-color: transparent; }
+.agent-hint { margin: 8px 0 0; font-size: 12.5px; line-height: 1.5; color: var(--muted); }
+.agent-where { margin: 14px 0 0; padding-top: 12px; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--muted); word-break: break-word; }
+.agent-where.warn { color: #f59e0b; }
 
 /* Tarjeta del creador */
 .about-card { width: min(380px, calc(100vw - 32px)); align-items: center; text-align: center; position: relative; padding: 30px 26px 20px; }

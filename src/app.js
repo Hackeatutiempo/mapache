@@ -10,6 +10,7 @@
   const Conn = window.MMConnectors;
   const Arrange = window.MMArrange;
   const Ink = window.MMInk;
+  const Merge = window.MMMerge;
 
   const $ = (s) => document.querySelector(s);
   const stage = $('#stage');
@@ -31,6 +32,7 @@
   const uid = () => crypto.randomUUID();
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
   const colorOf = (key) => L.PALETTE[key] || key || L.PALETTE.gray;
+  const tr = (s, v) => (window.MMI18n ? window.MMI18n.t(s, v) : v ? s.replace(/\{(\w+)\}/g, (_, k) => v[k]) : s);
 
   // Colores de nota (tonos apagados para el tema oscuro). Morado por defecto.
   const NOTE_COLORS = {
@@ -241,13 +243,85 @@
     map.doc = doc;
     map.updatedAt = Date.now();
     try {
-      await Store.put(JSON.parse(JSON.stringify(map)));
+      // Si mientras tanto otro cambió el tablero (tu agente, otra pestaña), el almacén junta los dos cambios.
+      const rec = JSON.parse(JSON.stringify(map));
+      const saved = await Store.put(rec, { base: syncBase });
+      if (saved !== rec) {
+        if (editing || (drag && drag.active) || saveTimer) syncBase = JSON.stringify(rec); // se aplicará al terminar
+        else applyBoard(saved);
+      } else syncBase = JSON.stringify(saved);
       $('#save-state').textContent = 'Guardado';
     } catch (err) {
       $('#save-state').textContent = `No se pudo guardar: ${err.message}`;
     }
     await Sidebar.refresh();
     updateHeader();
+  }
+
+  // ---------- Cambios que llegan de fuera (tu agente de IA, otra pestaña u otro navegador) ----------
+
+  // JSON del tablero tal como está guardado: de ahí parte lo que hay en pantalla. Si lo guardado cambia por otro
+  // lado, se nota porque deja de coincidir.
+  let syncBase = null;
+  let remotePending = false;
+
+  // Pone en pantalla otra versión del tablero abierto, sin mover la vista. Se puede deshacer con Ctrl+Z.
+  function applyBoard(b) {
+    const before = snapshot();
+    syncBase = JSON.stringify(b);
+    const next = normalizeDoc(JSON.parse(JSON.stringify(b.doc)));
+    Object.assign(map, JSON.parse(JSON.stringify(b)));
+    map.doc = next;
+    if (JSON.stringify(next) === before) { map.doc = doc; updateHeader(); return; }
+    doc = next;
+    history.past.push(before);
+    if (history.past.length > 200) history.past.shift();
+    history.future = [];
+    if (selectedId && !doc.nodes[selectedId]) selectedId = null;
+    if (selItem && !doc.items[selItem]) selItem = null;
+    for (const s of [multi, multiRoots, multiNodes]) for (const id of [...s]) if (!doc.items[id] && !doc.nodes[id]) s.delete(id);
+    render();
+    updateHeader();
+  }
+
+  // Mira si lo guardado cambió; si estás escribiendo o arrastrando, espera a que termines.
+  async function checkRemote() {
+    if (!map) return;
+    if (editing || (drag && drag.active) || saveTimer || switching) { remotePending = true; return; }
+    remotePending = false;
+    const cur = await Store.get(map.id);
+    if (!cur || editing || (drag && drag.active) || saveTimer) { if (cur) remotePending = true; return; }
+    if (JSON.stringify(cur) !== syncBase) applyBoard(cur);
+  }
+  setInterval(() => { if (remotePending) checkRemote(); }, 400);
+
+  Store.on(async (e) => {
+    if (e.type === 'board') {
+      if (map && e.id === map.id) {
+        if (e.deleted && !saveTimer) {
+          toast(tr('Este tablero se ha movido a la papelera desde fuera de la app'));
+          const rest = (await Store.all()).sort((a, b) => b.updatedAt - a.updatedAt);
+          map = null;
+          if (rest.length) await openMap(rest[0].id); else await createMap(null);
+          return;
+        }
+        if (!e.deleted) await checkRemote();
+      }
+      Sidebar.refresh();
+    } else if (e.type === 'folders') Sidebar.refresh();
+    else if (e.type === 'open' && e.id) {
+      if (await Store.get(e.id)) { if (!map || map.id !== e.id) await openMap(e.id); window.focus(); }
+    } else if (e.type === 'status') updateSaveTip();
+  });
+
+  // Dónde se guarda: en los archivos de tu ordenador (con servidor) o solo en este navegador.
+  function updateSaveTip() {
+    const s = Store.status();
+    const el = $('#save-state');
+    el.title = s.mode === 'online' ? tr('Tus tableros se guardan en {dir}', { dir: s.dataDir || '~/.mapache' })
+      : s.mode === 'offline' ? tr('Sin conexión con Mapache: se guarda en este navegador y se sincroniza al volver')
+        : tr('Se guarda en este navegador');
+    el.classList.toggle('offline', s.mode === 'offline');
   }
 
   document.addEventListener('visibilitychange', () => { if (document.hidden && saveTimer) saveNow(); });
@@ -4100,6 +4174,7 @@
     const inField = t.tagName === 'INPUT' || t.tagName === 'TEXTAREA';
     if (!help.hidden) { if (e.key === 'Escape' || e.key === '?') { e.preventDefault(); toggleHelp(); } return; }
     if (!about.hidden) { if (e.key === 'Escape') { e.preventDefault(); toggleAbout(); } return; }
+    if (!agentBox.hidden) { if (e.key === 'Escape') { e.preventDefault(); toggleAgent(); } return; }
     if (e.key === 'Escape' && !ctx.hidden) { e.preventDefault(); closeCtx(); return; }
     if (e.key === 'Escape' && !pop.hidden) { e.preventDefault(); closePopover(); return; }
     if (inField) return;
@@ -4305,8 +4380,11 @@
     if (saveTimer) await saveNow();
     const m = await Store.get(id);
     if (!m) return;
+    syncBase = JSON.stringify(m);
     map = m;
     doc = normalizeDoc(m.doc);
+    remotePending = false;
+    Store.reportOpen(id);
     history.past = [];
     history.future = [];
     selectedId = doc.rootId;
@@ -4561,8 +4639,63 @@
   about.addEventListener('click', (e) => { if (e.target === about) toggleAbout(); });
   for (const el of about.querySelectorAll('[data-icon]')) el.innerHTML = UI[el.dataset.icon] || '';
 
+  // Conectar tu agente de IA: un texto para pegarle y, si prefieres hacerlo tú, la orden exacta para cada agente.
+  const agentBox = $('#agent');
+  const REPO_URL = 'https://github.com/Hackeatutiempo/mapache';
+  let agentTab = 'claude-code';
+  async function toggleAgent() {
+    agentBox.hidden = !agentBox.hidden;
+    if (!agentBox.hidden) await fillAgent();
+  }
+  async function fillAgent() {
+    let info = null;
+    try { const r = await fetch('api/info', { cache: 'no-store' }); if (r.ok) info = await r.json(); } catch { /* sin servidor */ }
+    const q = (s) => (/[\s"]/.test(s) ? `"${s}"` : s);
+    const node = info && info.node ? info.node : 'node';
+    const bin = info && info.bin ? info.bin : '~/Mapache/bin/mapache.js';
+    const json = (o) => JSON.stringify(o, null, 2);
+    const std = { mcpServers: { mapache: { command: node, args: [bin, 'mcp'] } } };
+    const tabs = [
+      ['claude-code', 'Claude Code', `claude mcp add --scope user mapache -- ${q(node)} ${q(bin)} mcp`,
+        tr('Ejecútalo en una terminal y abre una conversación nueva de Claude Code.')],
+      ['claude-desktop', 'Claude Desktop', json(std),
+        tr('En Claude Desktop: Ajustes > Desarrollador > Editar configuración. Añade esto a claude_desktop_config.json y reinicia Claude.')],
+      ['codex', 'Codex', `codex mcp add mapache -- ${q(node)} ${q(bin)} mcp`,
+        tr('Codex es el agente de OpenAI (incluido en los planes de ChatGPT). Ejecútalo en una terminal y abre una sesión nueva.')],
+      ['cursor', 'Cursor', json(std), tr('Añádelo a ~/.cursor/mcp.json (o en Cursor: Ajustes > MCP).')],
+      ['vscode', 'VS Code', json({ servers: { mapache: { type: 'stdio', command: node, args: [bin, 'mcp'] } } }),
+        tr('En VS Code: paleta de comandos > «MCP: Open User Configuration», y pega esto.')],
+      ['gemini', 'Gemini CLI', `gemini mcp add mapache ${q(node)} ${q(bin)} mcp`, tr('Ejecútalo en una terminal y abre una sesión nueva.')],
+      ['chatgpt', 'ChatGPT', `${q(node)} ${q(bin)} help`,
+        tr('ChatGPT en la web o el móvil no llega solo a tu ordenador. Usa Codex, o conecta ChatGPT con tu ordenador mediante Desktop Commander y pídele que use la línea de comandos de Mapache (esta orden muestra la ayuda).')],
+    ];
+    const cur = tabs.find((x) => x[0] === agentTab) || tabs[0];
+    $('#agent-tabs').innerHTML = tabs.map(([k, name]) => `<button role="tab" data-agent-tab="${k}" aria-selected="${k === cur[0]}">${esc(name)}</button>`).join('');
+    $('#agent-snippet').textContent = cur[2];
+    $('#agent-hint').textContent = cur[3];
+    const dir = info && info.appDir ? info.appDir : '~/Mapache';
+    const guide = info && info.appDir ? `${info.appDir}${info.appDir.includes('\\') ? '\\' : '/'}AGENTS.md` : `${REPO_URL}/blob/main/AGENTS.md`;
+    $('#agent-prompt').textContent = tr('Conecta Mapache contigo como servidor MCP. Está instalado en {dir}. Sigue la sección «Connect Mapache to your AI agent» de {guide}. Cuando esté conectado, dime cómo usarlo.', { dir, guide });
+    const where = $('#agent-where');
+    const s = Store.status();
+    where.classList.toggle('warn', s.mode !== 'online');
+    where.textContent = s.mode === 'online' ? tr('Tus tableros se guardan en {dir}. Tu agente usa esos mismos archivos.', { dir: s.dataDir })
+      : tr('Ahora Mapache no está en marcha en este ordenador. Ábrelo con «Abrir Mapache» (o npm start) para que tu agente y esta pestaña compartan los tableros.');
+  }
+  agentBox.addEventListener('click', async (e) => {
+    if (e.target === agentBox) return toggleAgent();
+    const tab = e.target.closest('[data-agent-tab]');
+    if (tab) { agentTab = tab.dataset.agentTab; return fillAgent(); }
+    const b = e.target.closest('[data-copy]');
+    if (b) {
+      const text = $(`#${b.dataset.copy}`).textContent;
+      try { await navigator.clipboard.writeText(text); toast(tr('Copiado')); } catch { toast(tr('No se pudo copiar: selecciónalo y cópialo a mano')); }
+    }
+  });
+  for (const el of agentBox.querySelectorAll('[data-icon]')) el.innerHTML = UI[el.dataset.icon] || '';
+
   const commands = {
-    undo, redo, fit, help: toggleHelp, about: toggleAbout,
+    undo, redo, fit, help: toggleHelp, about: toggleAbout, agent: toggleAgent,
     'zoom-in': () => zoomAt(1.2), 'zoom-out': () => zoomAt(1 / 1.2), 'zoom-reset': () => zoomTo(1),
   };
   document.addEventListener('click', (e) => {
@@ -4577,6 +4710,7 @@
   setIcon('#export-png', UI.image);
   $('#theme-btn').addEventListener('click', (e) => openPopover('menu-theme', e.currentTarget));
   applyTheme();
+  setIcon('#agent-open', UI.sparkles, tr('Conectar agente de IA'));
   setIcon('#backup-export', UI.download, 'Exportar copia de seguridad');
   setIcon('#backup-import', UI.upload, 'Importar copia');
   for (const [cmd, icon] of [['undo', UI.undo], ['redo', UI.redo], ['zoom-out', UI.minus], ['zoom-in', UI.plus], ['fit', UI.fit], ['help', UI.help], ['about', UI.info]]) {
@@ -4615,6 +4749,8 @@
   async function start() {
     Store.persist();
     setTool('select');
+    await Store.ready();
+    updateSaveTip();
     const all = await Store.all();
     if (!all.length) return createMap(null);
     if (await openFromHash()) return;

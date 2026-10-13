@@ -9,8 +9,10 @@ How the board is built and why. Numbers are in board pixels at 100 % zoom.
 - **Keyboard for everything.** Every creation and editing action has a shortcut; press `?` in the app.
 - **No build step, no dependencies.** Classic scripts on `window.MM*` namespaces. Pure modules (`layout`,
   `connectors`, `ink`, `tables`) also export for Node so they can be tested with `node --test`.
-- **Local first.** Data lives in IndexedDB and the app works offline through a service worker. A server is
-  optional and will add sync, not replace local storage.
+- **Local first.** Boards are plain JSON files on your computer (`~/.mapache`). The browser keeps a full copy in
+  IndexedDB, so the app opens and works without the server, and syncs when it is back.
+- **Agents are first-class users.** Everything you can build by hand, an AI agent can build through the same
+  document model: an MCP server and a command line ship with the app.
 
 ## Document model
 
@@ -99,19 +101,45 @@ named `map:<rootId>`.
   lines, categorical colors in a fixed order validated for color blindness against the `#111821` surface,
   a single blue ramp for ordinal data, tooltips on hover.
 
-## Storage
+## Storage and sync
 
-- IndexedDB database `mindmap` (name kept from early versions so existing data loads), stores `maps` and
-  `folders`.
+- **Files** (`lib/store.js`): `~/.mapache` (or `MAPACHE_DATA`) holds `boards/<id>.json`, `folders.json`,
+  `media/<id>` (+ `<id>.json` with type and name) and `trash/`. Writes are atomic (temp file + rename). Every
+  board has a `rev` that grows on each save; a write carries the `rev` it started from and is refused with a
+  conflict if someone saved in between. Deleting moves the board to `trash/`.
+- **Server** (`server.js`, 127.0.0.1 only): serves `src/`, a small JSON API (`/api/boards`, `/api/folders`,
+  `/api/media`, `/api/session`, `/api/open`), Server-Sent Events on `/api/events`, and MCP on `/mcp`. It watches
+  the data folder, so a change written by the command line or the MCP server reaches open tabs in well under a
+  second. API requests must come with a `localhost` Host header and, if present, the app's own Origin: other
+  websites cannot read or change boards (this also blocks DNS rebinding).
+- **Browser** (`src/store.js`): IndexedDB database `mindmap` (name kept from early versions) with `maps`,
+  `folders`, `media` and `sync`. Every save goes to IndexedDB first and is pushed in the background; per board,
+  all operations run in a queue. On a conflict the browser merges and pushes again. Boards created before files
+  existed are uploaded on the first sync. Without the Mapache server (for example on a static host) it stays
+  browser-only, as before.
+- **Merging** (`src/merge.js`, shared by browser and Node): three-way merge of `base` (last common version),
+  `ours` and `theirs`, per node and per item and then per field. If both sides changed the same field, ours wins;
+  an edit beats a deletion; deleted branches come back if the other side added children to them. The open board
+  applies outside changes in place (undoable with Ctrl+Z) and waits while you are typing or dragging.
 - Preferences such as the last note color or shape style live in `localStorage` under `mindmap:*`.
-- Backups are JSON: `{ app: 'mapache', version: 3, folders, maps }`. Imports also accept a single `doc`.
+- Backups are JSON: `{ app: 'mapache', version: 4, folders, maps, media }`. Imports also accept a single `doc`.
 
-## Planned server
+## Agents (`lib/tools.js`, `lib/mcp.js`, `bin/mapache.js`)
 
-- Self-hosted Node server with SQLite, shipped as a Docker image.
-- Accounts with email and password, projects with roles, invite links.
-- Real-time collaboration with Yjs; the browser keeps a local copy and syncs when online.
-- A REST API and an MCP server over the same operations, so AI agents can create and edit boards.
+- One set of tools (list, read, search, create and update boards, add and edit nodes, items and connectors, open a
+  board) is exposed twice: as an MCP server (`mapache mcp`, JSON-RPC over stdio, or Streamable HTTP on `/mcp`) and
+  as a command line (`mapache tool <name> <json>` plus friendly shortcuts such as `mapache add`).
+- Agents write Markdown-like text (`# heading`, `- bullet`, `[ ] task`, `**bold**`, links) and indented outlines;
+  `lib/board.js` turns it into the app's line format and escapes everything else.
+- Boards, nodes and items can be referenced by id, by title or text, by a path (`Root > Branch`) or, for the
+  board, as `open` (the board shown in the app, reported by the browser).
+- New content is placed in free space: right of or below what is there, whichever keeps the board closest to a
+  screen's shape, using the real mind map layout with estimated text sizes.
+
+## Planned team server
+
+- Accounts with email and password, projects with roles, invite links, shipped as a Docker image.
+- Real-time collaboration with Yjs on top of the same files.
 
 ## Text, media and guides
 

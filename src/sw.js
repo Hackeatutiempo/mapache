@@ -1,6 +1,6 @@
 // Permite abrir la app aunque el servidor local no esté en marcha (usa la última versión guardada).
-const CACHE = 'mapache-v30';
-const FILES = ['./', 'index.html', 'styles.css', 'layout.js', 'icons.js', 'shapes.js', 'tables.js', 'charts.js', 'connectors.js', 'arrange.js', 'ink.js', 'store.js', 'sidebar.js', 'app.js', 'manifest.webmanifest', 'icon.svg', 'creator.webp'];
+const CACHE = 'mapache-v31';
+const FILES = ['./', 'index.html', 'styles.css', 'layout.js', 'icons.js', 'shapes.js', 'tables.js', 'charts.js', 'connectors.js', 'arrange.js', 'ink.js', 'merge.js', 'store.js', 'sidebar.js', 'app.js', 'manifest.webmanifest', 'icon.svg', 'creator.webp'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILES)).then(() => self.skipWaiting()));
@@ -13,7 +13,9 @@ self.addEventListener('activate', (e) => {
 
 // Primero la red (versión más nueva); si el servidor no responde, la copia guardada.
 self.addEventListener('fetch', (e) => {
-  if (e.request.method !== 'GET' || new URL(e.request.url).origin !== location.origin) return;
+  const url = new URL(e.request.url);
+  // Los tableros y los avisos en directo van siempre al servidor (nunca a la caché).
+  if (e.request.method !== 'GET' || url.origin !== location.origin || url.pathname.includes('/api/') || url.pathname.endsWith('/mcp')) return;
   e.respondWith(
     fetch(e.request)
       .then((res) => {

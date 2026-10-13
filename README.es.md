@@ -1,11 +1,12 @@
 <p align="center">
-  <img src="docs/banner.png" alt="Mapache: mapas mentales y pizarra que viven en tu navegador" width="100%">
+  <img src="docs/banner.png" alt="Mapache: mapas mentales y pizarra en tu ordenador" width="100%">
 </p>
 
-<h3 align="center">Mapas mentales y pizarra infinita que viven en tu navegador.<br>Código abierto. Funciona sin conexión. Sin cuentas.</h3>
+<h3 align="center">Mapas mentales y pizarra infinita en tu ordenador, y tu agente de IA también puede dibujar en ella.<br>Código abierto. Funciona sin conexión. Sin cuentas.</h3>
 
 <p align="center">
   <a href="#-empezar"><b>Empezar</b></a> ·
+  <a href="#-tu-agente-de-ia-tambi%C3%A9n-puede-usarlo">Agentes de IA (MCP)</a> ·
   <a href="#-funciones">Funciones</a> ·
   <a href="#gu%C3%ADa-de-uso">Guía de uso</a> ·
   <a href="#%EF%B8%8F-hoja-de-ruta">Hoja de ruta</a> ·
@@ -14,6 +15,7 @@
 
 <p align="center">
   <a href="LICENSE"><img alt="Licencia: AGPL-3.0" src="https://img.shields.io/badge/licencia-AGPL--3.0-8b5cf6"></a>
+  <a href="#-tu-agente-de-ia-tambi%C3%A9n-puede-usarlo"><img alt="Servidor MCP incluido" src="https://img.shields.io/badge/MCP-incluido-a78bfa"></a>
   <img alt="Cero dependencias" src="https://img.shields.io/badge/dependencias-0-22c55e">
   <img alt="Funciona sin conexión" src="https://img.shields.io/badge/funciona-sin%20conexi%C3%B3n-0ea5e9">
   <a href="#-contribuir"><img alt="Se aceptan PR" src="https://img.shields.io/badge/PRs-bienvenidas-f97316"></a>
@@ -29,8 +31,8 @@
 ## Por qué Mapache
 
 Casi todas las pizarras te piden una cuenta, una cuota al mes y una copia de tus ideas en sus servidores.
-**Mapache es una carpeta que ejecutas en tu ordenador.** Tus tableros se quedan en tu navegador, abre al
-instante y funciona hasta en un avión.
+**Mapache es una carpeta que ejecutas en tu ordenador.** Tus tableros son archivos en tu disco, abre al instante,
+funciona hasta en un avión y **tu agente de IA puede leerlos y trabajar en ellos contigo**.
 
 - ⚡ **Rápido como una app de escritorio.** Sin frameworks, sin compilar, sin pantallas de carga.
 - 🧠 **Mapas mentales que van a tu ritmo.** Tab para un hijo, Enter para un hermano, arrastrar para cambiar de
@@ -38,14 +40,17 @@ instante y funciona hasta en un avión.
 - 🎨 **Una pizarra de verdad alrededor.** Notas, 12 formas, secciones, conectores que rodean los objetos, dibujo
   a mano con detección de formas, imágenes y vídeos.
 - 📊 **Datos incluidos.** Pega una tabla de Excel o Google Sheets y conviértela en cualquiera de 17 gráficos.
-- 🔒 **Tuyo de verdad.** Primero en local, sin telemetría y con copia de todo cuando quieras. AGPL-3.0.
+- 🤖 **Hecho para agentes de IA.** Su servidor MCP permite que Claude, Codex, Cursor y compañía lean tus tableros y
+  creen mapas mentales, notas, diagramas y tablas. Los ves aparecer en directo.
+- 🔒 **Tuyo de verdad.** Primero en local, sin telemetría y en archivos JSON que puedes leer, copiar o guardar en Git. AGPL-3.0.
 
 |  | **Mapache** | Pizarra en la nube típica |
 |---|:---:|:---:|
 | Precio | **Gratis** | Plan gratis y luego por usuario |
 | Necesita cuenta | **No** | Sí |
-| Dónde están tus tableros | **Tu navegador / tu servidor** | Su nube |
+| Dónde están tus tableros | **Archivos en tu ordenador** | Su nube |
 | Sin conexión | **Sí** | Limitado |
+| Tu agente de IA puede leer y editar tableros | **Sí, en local (MCP)** | Desde su nube, si acaso |
 | Código abierto y autoalojable | **Sí** | No |
 | Dependencias que instalar | **0** | — |
 
@@ -54,12 +59,12 @@ instante y funciona hasta en un avión.
 ¿No eres técnico? Pásale esto a tu agente de IA (Claude Code, Codex, Cursor…) y lo hace todo por ti:
 
 ```text
-Instálame Mapache siguiendo https://github.com/Hackeatutiempo/mapache/blob/main/AGENTS.md
-y déjame un acceso directo para abrirlo con doble clic.
+Instálame Mapache siguiendo https://github.com/Hackeatutiempo/mapache/blob/main/AGENTS.md,
+conéctalo contigo como servidor MCP y déjame un acceso directo para abrirlo con doble clic.
 ```
 
 La guía paso a paso para agentes está en [AGENTS.md](AGENTS.md): comprueba Node.js, descarga el código, lo arranca,
-crea un acceso directo en el escritorio y explica cómo guardar copia de tus tableros.
+crea un acceso directo en el escritorio, conecta el servidor MCP y explica dónde se guardan tus tableros.
 
 ## 🚀 Empezar
 
@@ -72,13 +77,46 @@ npm start
 ```
 
 Abre **<http://localhost:4321>** y a pensar. Las siguientes veces, doble clic en `Abrir Mapache.cmd` (Windows) o
-`./start.sh` (macOS y Linux): arrancan Mapache si hace falta y abren el navegador.
+`./start.sh` (macOS y Linux): arrancan Mapache en segundo plano si hace falta y abren el navegador.
 
 > **Consejo:** en Chrome o Edge elige *Instalar aplicación* en la barra de direcciones. Mapache tendrá su propia
-> ventana e icono y funcionará aunque el servidor esté apagado.
+> ventana e icono y funcionará aunque el servidor esté apagado; tus cambios pasan a tus archivos en cuanto vuelve.
 
-Tus tableros se guardan solos en ese navegador. Usa de vez en cuando **Exportar copia de seguridad** (abajo a la
-izquierda), sobre todo antes de borrar los datos del navegador.
+Tus tableros se guardan solos como archivos JSON en `~/.mapache` (con `node bin/mapache.js where` ves la carpeta
+exacta). **Exportar copia de seguridad** (abajo a la izquierda) te sigue dando todo en un solo archivo.
+
+## 🤖 Tu agente de IA también puede usarlo
+
+Mapache trae un **servidor MCP** (el estándar abierto con el que los agentes de IA usan herramientas) y una **línea de
+comandos**. Conéctalo una vez y pide cosas como:
+
+> *«Convierte mis notas de la reunión de hoy en un mapa mental en Mapache.»*<br>
+> *«Lee el tablero que tengo abierto y añade una rama de riesgos con tres ideas en cada una.»*<br>
+> *«Dibuja el proceso de alta como diagrama de flujo, con una decisión para usuarios de pago y gratis.»*<br>
+> *«Pon estas cifras de ventas en una tabla de mi tablero del T4 y añade un gráfico de columnas.»*
+
+Si tienes Mapache abierto en el navegador, los cambios aparecen **en directo** y **Ctrl+Z** los deshace. Todo pasa en tu
+ordenador: el servidor MCP lee y escribe los mismos archivos que usa la app.
+
+Lo más fácil: en la app, pulsa **Conectar agente de IA** (abajo a la izquierda) y copia el texto en tu agente. O
+conéctalo tú (cambia la ruta por donde instalaste Mapache; `node bin/mapache.js mcp-config` te las da con tus rutas reales):
+
+| Agente | Cómo conectarlo |
+|---|---|
+| **Claude Code** | `claude mcp add --scope user mapache -- node ~/Mapache/bin/mapache.js mcp` |
+| **Claude Desktop** | *Ajustes > Desarrollador > Editar configuración* y añade el JSON de abajo |
+| **Codex** (OpenAI, incluido en los planes de ChatGPT) | `codex mcp add mapache -- node ~/Mapache/bin/mapache.js mcp` |
+| **Gemini CLI** | `gemini mcp add mapache node ~/Mapache/bin/mapache.js mcp` |
+| **Cursor**, **Windsurf** | añade el JSON de abajo a `~/.cursor/mcp.json` o `~/.codeium/windsurf/mcp_config.json` |
+| **VS Code** | *MCP: Open User Configuration* y añade `"mapache": { "type": "stdio", "command": "node", "args": ["~/Mapache/bin/mapache.js", "mcp"] }` dentro de `servers` |
+| **ChatGPT** (web o móvil) | No llega solo a tu ordenador. Usa Codex, o un puente como [Desktop Commander](https://desktopcommander.app), y pídele a ChatGPT que use la línea de comandos `mapache` |
+
+```json
+{ "mcpServers": { "mapache": { "command": "node", "args": ["/ruta/completa/a/Mapache/bin/mapache.js", "mcp"] } } }
+```
+
+Las herramientas que recibe el agente y la línea de comandos están explicadas en el [README en inglés](README.md#-your-ai-agent-can-use-it-too)
+y en `node bin/mapache.js help`.
 
 ## ✨ Funciones
 
@@ -185,6 +223,7 @@ botón hasta donde lo quieras.
   cursiva y enlace, a lo seleccionado. Las notas, textos y formas también se alinean a la izquierda, centro o derecha.
   Las formas crecen con su texto.
 - **Tema:** botón de sol o luna arriba a la derecha (oscuro, claro o según el sistema).
+- **Idioma:** español o inglés, según tu navegador; se cambia con el botón del globo, junto al del tema.
 
 Pulsa **?** dentro de la app para ver todos los atajos.
 
@@ -192,18 +231,22 @@ Pulsa **?** dentro de la app para ver todos los atajos.
 
 - [x] Mapas mentales, objetos de pizarra, tablas y gráficos
 - [x] Conectores, dibujo a mano, medios, selección múltiple y guías
-- [ ] Interfaz en inglés
-- [ ] Servidor propio con Docker: cuentas, proyectos y enlaces de invitación
+- [x] Interfaz en inglés
+- [x] Tableros como archivos en tu ordenador, sincronizados en directo entre pestañas y navegadores
+- [x] Servidor MCP y línea de comandos para que los agentes de IA lean y editen tableros
+- [ ] Compartir un tablero como un solo archivo HTML o PDF
+- [ ] Servidor para equipos con Docker: cuentas, proyectos y enlaces de invitación
 - [ ] Colaboración en tiempo real (CRDT, sigue funcionando sin conexión)
-- [ ] API REST y servidor MCP para que los agentes de IA lean y editen tableros
 - [ ] Comentarios y menciones
 
 ¿Tienes una idea? [Abre una incidencia](https://github.com/Hackeatutiempo/mapache/issues).
 
 ## 🔐 Privacidad
 
-Sin cuentas, sin analítica y sin servidores que no sean tuyos. Los tableros (y los vídeos) viven en el IndexedDB
-de tu navegador, y las copias de seguridad son archivos JSON que puedes leer.
+Sin cuentas, sin analítica y sin servidores que no sean tuyos. Los tableros son archivos JSON en `~/.mapache`, en tu
+ordenador, con una copia en el navegador para que la app funcione sin conexión. El servidor local solo escucha en tu
+propio ordenador y rechaza peticiones de otras webs. El servidor MCP también se ejecuta en tu ordenador; el proveedor
+de tu agente ve lo que el agente lee, como con cualquier otra herramienta que le des.
 
 <details>
 <summary><b>Cómo está hecho</b></summary>
@@ -218,7 +261,7 @@ Los tests se lanzan con `npm test`.
 
 Las incidencias y las pull requests son bienvenidas, desde una errata hasta una función entera. Evita añadir
 dependencias si puedes, sigue el estilo del código de alrededor y añade un test en `test/` si tocas geometría o
-lectura de datos. La traducción de la interfaz al inglés es una gran primera contribución.
+lectura de datos o sincronización. Traducir la interfaz a más idiomas es una gran primera contribución (ver `src/i18n.js`).
 
 ## ⭐ Apoya el proyecto
 
