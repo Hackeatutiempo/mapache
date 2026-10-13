@@ -1,28 +1,57 @@
-<p align="center"><img src="src/icon.svg" width="96" alt="Logo de Mapache"></p>
+<p align="center">
+  <img src="docs/banner.png" alt="Mapache: mapas mentales y pizarra que viven en tu navegador" width="100%">
+</p>
 
-<h1 align="center">Mapache</h1>
+<h3 align="center">Mapas mentales y pizarra infinita que viven en tu navegador.<br>Código abierto. Funciona sin conexión. Sin cuentas.</h3>
 
-<p align="center"><b>El mapache que ordena tus ideas.</b><br>
-Mapas mentales y pizarra infinita de código abierto que funcionan en tu navegador. Sin cuentas, sin nube, sin rastreo.</p>
+<p align="center">
+  <a href="#-empezar"><b>Empezar</b></a> ·
+  <a href="#-funciones">Funciones</a> ·
+  <a href="#gu%C3%ADa-de-uso">Guía de uso</a> ·
+  <a href="#%EF%B8%8F-hoja-de-ruta">Hoja de ruta</a> ·
+  <a href="README.md">English</a>
+</p>
 
-<p align="center"><a href="README.md">Read in English</a></p>
+<p align="center">
+  <a href="LICENSE"><img alt="Licencia: AGPL-3.0" src="https://img.shields.io/badge/licencia-AGPL--3.0-8b5cf6"></a>
+  <img alt="Cero dependencias" src="https://img.shields.io/badge/dependencias-0-22c55e">
+  <img alt="Funciona sin conexión" src="https://img.shields.io/badge/funciona-sin%20conexi%C3%B3n-0ea5e9">
+  <a href="#-contribuir"><img alt="Se aceptan PR" src="https://img.shields.io/badge/PRs-bienvenidas-f97316"></a>
+  <a href="https://github.com/Hackeatutiempo/mapache/stargazers"><img alt="Estrellas en GitHub" src="https://img.shields.io/github/stars/Hackeatutiempo/mapache?style=social"></a>
+</p>
 
-![Mapache: un mapa mental, un diagrama de flujo, una tabla y un gráfico en el mismo tablero](docs/screenshot.png)
+<p align="center">
+  <img src="docs/demo.gif" width="860" alt="Un mapa mental, una nota y una forma creados en segundos, solo con el teclado">
+</p>
+
+---
 
 ## Por qué Mapache
 
-- **Mapas mentales rápidos.** Puntos de añadir rápido, ramas de colores, plegar con contador, arrastrar
-  ramas viendo en vivo dónde caen y un atajo de teclado para todo.
-- **Una pizarra entera alrededor.** Notas, texto, stickers, imágenes, 12 formas, secciones, conectores y
-  dibujo a mano.
-- **También datos.** Pega una tabla de Excel, Google Sheets, Notion o Markdown (o arrastra un CSV) y
-  conviértela en cualquiera de los 17 tipos de gráfico, enlazados a la tabla.
-- **Tuyo.** Los mapas viven en tu navegador (IndexedDB) y funcionan sin conexión una vez instalado. Exporta
-  una copia cuando quieras. AGPL-3.0, sin telemetría.
+Casi todas las pizarras te piden una cuenta, una cuota al mes y una copia de tus ideas en sus servidores.
+**Mapache es una carpeta que ejecutas en tu ordenador.** Tus tableros se quedan en tu navegador, abre al
+instante y funciona hasta en un avión.
 
-## Empezar
+- ⚡ **Rápido como una app de escritorio.** Sin frameworks, sin compilar, sin pantallas de carga.
+- 🧠 **Mapas mentales que van a tu ritmo.** Tab para un hijo, Enter para un hermano, arrastrar para cambiar de
+  rama, colores por rama y tantos mapas como quieras en un tablero.
+- 🎨 **Una pizarra de verdad alrededor.** Notas, 12 formas, secciones, conectores que rodean los objetos, dibujo
+  a mano con detección de formas, imágenes y vídeos.
+- 📊 **Datos incluidos.** Pega una tabla de Excel o Google Sheets y conviértela en cualquiera de 17 gráficos.
+- 🔒 **Tuyo de verdad.** Primero en local, sin telemetría y con copia de todo cuando quieras. AGPL-3.0.
 
-Solo necesitas [Node.js](https://nodejs.org) 18 o posterior. No hay dependencias que instalar.
+|  | **Mapache** | Pizarra en la nube típica |
+|---|:---:|:---:|
+| Precio | **Gratis** | Plan gratis y luego por usuario |
+| Necesita cuenta | **No** | Sí |
+| Dónde están tus tableros | **Tu navegador / tu servidor** | Su nube |
+| Sin conexión | **Sí** | Limitado |
+| Código abierto y autoalojable | **Sí** | No |
+| Dependencias que instalar | **0** | — |
+
+## 🚀 Empezar
+
+Solo necesitas [Node.js](https://nodejs.org) 18 o posterior. No hay nada más que instalar.
 
 ```bash
 git clone https://github.com/Hackeatutiempo/mapache.git
@@ -30,13 +59,27 @@ cd mapache
 npm start
 ```
 
-Abre <http://localhost:4321>. En Windows también puedes hacer doble clic en `Abrir Mapache.cmd`.
+Abre **<http://localhost:4321>** y a pensar. En Windows también puedes hacer doble clic en `Abrir Mapache.cmd`.
 
-**Recomendado:** en Chrome o Edge, *Instalar aplicación* desde la barra de direcciones. Mapache tendrá su
-propia ventana e icono y funcionará aunque el servidor no esté en marcha.
+> **Consejo:** en Chrome o Edge elige *Instalar aplicación* en la barra de direcciones. Mapache tendrá su propia
+> ventana e icono y funcionará aunque el servidor esté apagado.
 
-Tus mapas se guardan en ese navegador y en esa dirección. Usa de vez en cuando **Exportar copia de
-seguridad** (abajo a la izquierda), sobre todo antes de borrar los datos del navegador.
+Tus tableros se guardan solos en ese navegador. Usa de vez en cuando **Exportar copia de seguridad** (abajo a la
+izquierda), sobre todo antes de borrar los datos del navegador.
+
+## ✨ Funciones
+
+### Mapas mentales que crecen tan rápido como piensas
+<p align="center"><img src="docs/feature-mindmap.png" width="860" alt="Un mapa mental de colores con cinco ramas"></p>
+
+### Diagramas de flujo con conectores que se colocan solos
+<p align="center"><img src="docs/feature-flow.png" width="760" alt="Un diagrama de flujo dentro de una sección con ramas Sí y No"></p>
+
+### Tus datos, en gráficos
+<p align="center"><img src="docs/feature-data.png" width="760" alt="Una tabla y el gráfico de columnas creado con ella"></p>
+
+### Claro u oscuro, como prefieras
+<p align="center"><img src="docs/screenshot-light.png" width="860" alt="Mapache en modo claro con carpetas, un mapa mental, notas, un diagrama y un gráfico"></p>
 
 ## Guía de uso
 
@@ -53,8 +96,8 @@ seguridad** (abajo a la izquierda), sobre todo antes de borrar los datos del nav
 
 ### Seleccionar varios
 
-Arrastra sobre el fondo: el recuadro selecciona todo lo que toca (objetos, conectores, trazos y el mapa mental;
-las secciones, solo si quedan dentro del todo). **Shift+clic** añade o quita, **Ctrl+A** selecciona todo. Con varios
+Arrastra sobre el fondo: el recuadro selecciona todo lo que toca (objetos, conectores, trazos y nodos de los
+mapas; si toca la raíz, el mapa entero; las secciones, solo si quedan dentro del todo). **Shift+clic** añade o quita, **Ctrl+A** selecciona todo. Con varios
 elegidos: arrástralos juntos, flechas para moverlos, **Supr** borrar, **Ctrl+D** duplicar, **Ctrl+C / V** copiar y
 pegar, y las **esquinas del marco** para escalarlos. En su barra: filtrar por tipo, **organizar** (en cuadrícula, como
 árbol o como mapa mental siguiendo las flechas), alinear, repartir, bloquear y meter en sección.
@@ -132,31 +175,52 @@ botón hasta donde lo quieras.
 
 Pulsa **?** dentro de la app para ver todos los atajos.
 
-## Hoja de ruta
+## 🗺️ Hoja de ruta
 
 - [x] Mapas mentales, objetos de pizarra, tablas y gráficos
-- [x] Conectores y dibujo a mano
+- [x] Conectores, dibujo a mano, medios, selección múltiple y guías
 - [ ] Interfaz en inglés
-- [ ] Servidor propio con Docker: cuentas (email y contraseña), proyectos y enlaces de invitación
+- [ ] Servidor propio con Docker: cuentas, proyectos y enlaces de invitación
 - [ ] Colaboración en tiempo real (CRDT, sigue funcionando sin conexión)
 - [ ] API REST y servidor MCP para que los agentes de IA lean y editen tableros
 - [ ] Comentarios y menciones
 
-## Estructura
+¿Tienes una idea? [Abre una incidencia](https://github.com/Hackeatutiempo/mapache/issues).
 
-JavaScript sin compilar ni dependencias. Lo que abre el navegador es exactamente el código que lees.
-La tabla de archivos y las decisiones de diseño están en el [README en inglés](README.md#project-structure)
-y en [DESIGN.md](DESIGN.md).
+## 🔐 Privacidad
 
-```bash
-npm test
-```
+Sin cuentas, sin analítica y sin servidores que no sean tuyos. Los tableros (y los vídeos) viven en el IndexedDB
+de tu navegador, y las copias de seguridad son archivos JSON que puedes leer.
 
-Si Mapache te resulta útil, una ⭐ en GitHub ayuda a que otras personas lo encuentren. La primera vez que lo
-arrancas con `npm start` en una terminal te pregunta una sola vez si quieres darla (solo lo hace si dices que sí,
-con tu propia sesión del CLI de GitHub).
+<details>
+<summary><b>Cómo está hecho</b></summary>
 
-## Licencia
+JavaScript sin frameworks ni compilación: el navegador ejecuta exactamente el código que lees. La tabla de
+archivos está en el [README en inglés](README.md) y las decisiones de diseño en [DESIGN.md](DESIGN.md).
+Los tests se lanzan con `npm test`.
 
-[GNU AGPL-3.0](LICENSE). Puedes usar, modificar e instalar Mapache en tu servidor libremente. Si ofreces una
-versión modificada como servicio a otras personas, debes compartir tus cambios con la misma licencia.
+</details>
+
+## 🤝 Contribuir
+
+Las incidencias y las pull requests son bienvenidas, desde una errata hasta una función entera. Evita añadir
+dependencias si puedes, sigue el estilo del código de alrededor y añade un test en `test/` si tocas geometría o
+lectura de datos. La traducción de la interfaz al inglés es una gran primera contribución.
+
+## ⭐ Apoya el proyecto
+
+Si Mapache te ahorra tiempo, **una estrella ayuda a que otras personas lo encuentren.** La primera vez que lo
+arrancas con `npm start` en una terminal te pregunta una sola vez si quieres darla (solo si dices que sí, con tu
+propia sesión del CLI de GitHub).
+
+## 📄 Licencia
+
+[GNU AGPL-3.0](LICENSE). Úsalo, cámbialo e instálalo en tu servidor gratis. Si ofreces una versión modificada
+como servicio a otras personas, comparte tus cambios con la misma licencia.
+
+---
+
+<p align="center">
+  Hecho con 🦝 por <b>Cristian</b> · <a href="https://hackeatutiempo.com">Hackea Tu Tiempo</a> ·
+  <a href="https://www.instagram.com/hackeatutiempo/">Instagram</a>
+</p>
