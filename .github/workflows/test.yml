@@ -1,0 +1,88 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  # Todas las pruebas, en los tres sistemas y en las versiones de Node.js que Mapache dice admitir.
+  test:
+    name: npm test (${{ matrix.os }}, Node ${{ matrix.node }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        node: [18, 20, 22]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - run: npm test
+
+  # El lanzador de macOS y Linux: arranca Mapache en segundo plano y responde.
+  launcher:
+    name: start.sh (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    env:
+      PORT: 4400
+      MAPACHE_DATA: ${{ github.workspace }}/../mapache-data
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Open Mapache with start.sh
+        run: ./start.sh
+      - name: It answers and saves boards as files
+        run: |
+          curl -fsS http://127.0.0.1:4400/api/info | grep '"app":"mapache"'
+          node bin/mapache.js status
+          node bin/mapache.js new "From CI" --outline "From CI
+            One
+            Two"
+          node bin/mapache.js list | grep "From CI"
+          test -n "$(ls "$MAPACHE_DATA/boards")"
+      - name: Opening again reuses the running server
+        run: ./start.sh && node bin/mapache.js status | grep Running
+      - name: Stop
+        run: node bin/mapache.js stop && sleep 2 && ! curl -fsS http://127.0.0.1:4400/api/info
+
+  # La imagen de Docker tal cual se publica (node:22-alpine), con el modo equipo.
+  docker:
+    name: Docker image (Alpine, team mode)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: docker build -t mapache .
+      - name: Run
+        run: docker run -d --name mapache -p 4321:4321 -v mapache-data:/data -e PUBLIC_URL=http://localhost:4321 mapache
+      - name: Healthy and in team mode
+        run: |
+          for i in $(seq 1 50); do
+            [ "$(docker inspect -f '{{.State.Health.Status}}' mapache)" = healthy ] && break
+            sleep 2
+          done
+          docker inspect -f '{{.State.Health.Status}}' mapache | grep healthy
+          curl -fsS http://127.0.0.1:4321/api/info | grep '"mode":"team"'
+          docker logs mapache | grep -E "Setup code|Código"
+          [ "$(docker exec mapache id -un)" = node ]
+      - name: Team commands and data in the volume
+        run: |
+          docker exec mapache node bin/mapache.js team admin admin@example.com --name Admin | grep Password
+          docker exec mapache node bin/mapache.js new "From Docker"
+          docker rm -f mapache
+          docker run -d --name mapache -p 4321:4321 -v mapache-data:/data mapache
+          sleep 3
+          docker exec mapache node bin/mapache.js list | grep "From Docker"
+          docker exec mapache node bin/mapache.js team | grep admin@example.com
