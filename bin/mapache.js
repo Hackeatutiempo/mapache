@@ -81,7 +81,7 @@ Usage: mapache <command> [arguments]
 
 App
   open [board]                 Open Mapache (or a board) in the browser, starting it if needed
-  start                        Start Mapache in the background
+  start [--team] [--data <dir>] Start Mapache in the background (--team: accounts and invitations, see TEAM.md)
   stop                         Stop it
   status                       Is it running? Where are the boards?
   where                        Print the folder where the boards are saved
@@ -192,7 +192,8 @@ function teamCommand(pos, opt) {
     }
     case 'invite': {
       const t = auth.createInvite({ role: opt.role || 'editor', email: opt.email || null, createdBy: 'cli' });
-      const url = String(opt.url || process.env.PUBLIC_URL || `http://localhost:${Number(process.env.PORT) || 4321}`).replace(/\/+$/, '');
+      const lan = Store.lanAddress();
+      const url = String(opt.url || process.env.PUBLIC_URL || `http://${lan || 'localhost'}:${Number(process.env.PORT) || 4321}`).replace(/\/+$/, '');
       return `Invitation (${opt.role || 'editor'}, valid 7 days, one person):\n${url}/#invite=${encodeURIComponent(t)}`;
     }
     case 'reset-password': {
@@ -274,8 +275,14 @@ async function main() {
     case 'team':
       return console.log(teamCommand(pos, opt));
     case 'start': {
-      const info = await Launch.start();
-      return console.log(`${info.started ? 'Started' : 'Already running'}: http://localhost:${info.port}\nBoards: ${info.dataDir}`);
+      // --team: modo equipo (cuentas e invitaciones). --data: otra carpeta de tableros (para no mezclar los tuyos).
+      if (opt.team) process.env.MAPACHE_MODE = 'team';
+      if (typeof opt.data === 'string') process.env.MAPACHE_DATA = require('path').resolve(opt.data.replace(/^~(?=$|[\\/])/, require('os').homedir()));
+      const info = await Launch.start({ store: Store.open() });
+      const lan = info.mode === 'team' && Store.lanAddress();
+      return console.log(`${info.started ? 'Started' : 'Already running'}${info.mode === 'team' ? ' (team mode)' : ''}: http://localhost:${info.port}` +
+        `${lan ? `\nOn your network: http://${lan}:${info.port}` : ''}\nBoards: ${info.dataDir || Store.dataDir()}` +
+        `${info.mode === 'team' && info.started ? '\nCreate the first admin with: mapache team admin you@example.com' : ''}`);
     }
     case 'stop':
       return console.log((await Launch.stop()) ? 'Mapache stopped.' : 'Mapache was not running.');

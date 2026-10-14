@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.2 — 2026-10-14
+
+### Fixed
+- Team mode on your own computer: you can work from `localhost` while others use your network address, and invitation
+  links use that network address instead of `localhost`. `mapache start --team [--data <dir>]` starts team mode in one step
+  and prints the address for your network.
+
 ## 0.5.1 — 2026-10-14
 
 ### Fixed

@@ -162,17 +162,26 @@ function allowedLocal(req) {
   return true;
 }
 // Modo equipo: los cambios hechos con la cookie de sesión deben venir de la propia app (contra CSRF).
+// Vale la dirección pública y también aquella con la que se ha entrado (por ejemplo, localhost en el propio servidor).
 function sameOrigin(req) {
-  const o = req.headers.origin;
+  const o = String(req.headers.origin || '').toLowerCase();
   if (!o) return req.method === 'GET' || req.method === 'HEAD';
-  return o.toLowerCase() === origin(req).toLowerCase();
+  const host = String(req.headers.host || '').toLowerCase();
+  return o === origin(req).toLowerCase() || o === `http://${host}` || o === `https://${host}`;
+}
+// Dirección para compartir (enlaces de invitación): la pública; si se entró por localhost, la IP en la red local.
+function shareOrigin(req) {
+  if (PUBLIC_URL) return PUBLIC_URL;
+  const o = origin(req);
+  const lan = Store.lanAddress();
+  return lan && /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:|$)/i.test(o) ? `http://${lan}:${PORT}` : o;
 }
 
 let team = null;
 let auth = null;
 if (TEAM) {
   auth = require('./lib/auth').open(store.dir);
-  team = require('./lib/team').makeTeam({ auth, send, readJSON, origin, secure, onTeamChange: () => broadcast('team', { at: Date.now() }), onSignOut: signOut });
+  team = require('./lib/team').makeTeam({ auth, send, readJSON, origin: shareOrigin, secure, onTeamChange: () => broadcast('team', { at: Date.now() }), onSignOut: signOut });
   // Primera cuenta sin pasar por la web (útil en Docker): MAPACHE_ADMIN_EMAIL y MAPACHE_ADMIN_PASSWORD.
   if (auth.needsSetup() && process.env.MAPACHE_ADMIN_EMAIL && process.env.MAPACHE_ADMIN_PASSWORD) {
     try { auth.createUser({ email: process.env.MAPACHE_ADMIN_EMAIL, name: process.env.MAPACHE_ADMIN_NAME, password: process.env.MAPACHE_ADMIN_PASSWORD, role: 'admin' }); } catch (e) { console.error(e.message); }
@@ -412,6 +421,8 @@ server.listen(PORT, HOST, () => {
   if (TEAM) {
     console.log(say(`Mapache (modo equipo) en ${PUBLIC_URL || `http://${HOST === '0.0.0.0' ? 'localhost' : HOST}:${PORT}`}`, `Mapache (team mode) is running at ${PUBLIC_URL || `http://${HOST === '0.0.0.0' ? 'localhost' : HOST}:${PORT}`}`));
     if (team.setupCode()) console.log(say(`Código para crear la cuenta de admin: ${team.setupCode()}`, `Setup code to create the admin account: ${team.setupCode()}`));
+    const lan = Store.lanAddress();
+    if (lan && !PUBLIC_URL && HOST === '0.0.0.0') console.log(say(`En tu red: http://${lan}:${PORT}`, `On your network: http://${lan}:${PORT}`));
   } else console.log(say(`Mapache en http://localhost:${PORT}`, `Mapache is running at http://localhost:${PORT}`));
   console.log(say(`Tableros: ${store.dir}`, `Boards: ${store.dir}`));
   askStar();
