@@ -43,7 +43,22 @@ async function textOf(v) {
   return v;
 }
 
-const run = async (name, args) => console.log(await Tools.call(name, args, { open: (id, launch) => openViaApp(id, launch) }));
+const ctx = () => ({ open: (id, launch) => openViaApp(id, launch), exportBoard: (id, format) => exportViaApp(id, format) });
+const run = async (name, args) => console.log(await Tools.call(name, args, ctx()));
+
+// Exportar lo hace la app (la pestaña abierta). Si no hay ninguna, se abre el navegador en ese tablero y se espera.
+async function exportViaApp(id, format) {
+  const info = await Launch.start();
+  for (let i = 0; i < 40; i++) {
+    const res = await fetch(`http://127.0.0.1:${info.port}/api/export`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, format }) });
+    if (res.ok) return Buffer.from(await res.arrayBuffer());
+    const err = (await res.json().catch(() => ({}))).error;
+    if (res.status !== 409) throw new Error(err || `Export failed (${res.status})`);
+    if (i === 0) await Launch.openURL(`http://localhost:${info.port}/#m=${encodeURIComponent(id)}`);
+    await new Promise((r) => setTimeout(r, 500));
+  }
+  throw new Error('Mapache needs to be open in a browser to export. Open it and try again');
+}
 
 // Si ya hay una pestaña de Mapache abierta, cambia a ese tablero; si no, abre el navegador.
 async function openViaApp(id, launch = true) {
@@ -81,6 +96,8 @@ Boards (for you or your AI agent)
   add <board> <parent> <text...>  Add branches under a node (or --outline <text|-|@file>)
   note <board> <text> [--color <c>]  Add a sticky note
   connect <board> <from> <to> [--label <text>]  Draw an arrow
+  export <board> [--format html|pdf|png|svg] [--out <folder or file>]
+                               Save a board to share (default: a web page in Downloads)
   rename <board> <title>       Rename a board
   trash                        Boards in the trash
   restore <id>                 Bring a board back from the trash
@@ -190,7 +207,7 @@ async function main() {
     case 'version': case '-v': case '--version':
       return console.log(version);
     case 'mcp':
-      return require('../lib/mcp').serveStdio({ open: (id, launch) => openViaApp(id, launch) });
+      return require('../lib/mcp').serveStdio(ctx());
     case 'mcp-config':
       return console.log(mcpConfig(pos[0]));
     case 'serve':
@@ -239,6 +256,8 @@ async function main() {
       const [board, from, to] = pos;
       return run('connect', { board, connections: [{ from, to, label: opt.label }] });
     }
+    case 'export':
+      return run('export_board', { board: pos.join(' ') || 'open', format: opt.format, path: opt.out });
     case 'rename': {
       const [board, ...title] = pos;
       return run('update_board', { board, title: title.join(' ') });

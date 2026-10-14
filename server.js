@@ -128,6 +128,19 @@ function send(res, status, data) {
 
 const sessionFile = path.join(store.dir, 'session.json');
 
+// Exportar un tablero para tu agente: lo dibuja la pestaña de Mapache abierta (la última que se conectó) y lo devuelve.
+const exportsPending = new Map();
+function exportFromApp(id, format) {
+  if (!clients.size) return Promise.resolve({ error: 'no-app' });
+  const reqId = require('crypto').randomUUID();
+  const target = [...clients].pop();
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => { exportsPending.delete(reqId); resolve({ error: 'The Mapache tab did not answer in time' }); }, 90000);
+    exportsPending.set(reqId, (r) => { clearTimeout(timer); resolve(r); });
+    target.write(`event: export\ndata: ${JSON.stringify({ reqId, id, format })}\n\n`);
+  });
+}
+
 async function api(req, res, url) {
   const parts = url.split('/').filter(Boolean).slice(1); // sin 'api'
   const [kind, id] = parts;
@@ -193,6 +206,23 @@ async function api(req, res, url) {
     Store.writeAtomic(sessionFile, JSON.stringify({ openBoard: s && typeof s.openBoard === 'string' ? s.openBoard : null, at: Date.now() }));
     return send(res, 200, { ok: true });
   }
+  if (kind === 'export' && !id && m === 'POST') {
+    const s = await readJSON(req);
+    if (!s || typeof s.id !== 'string') return send(res, 400, { error: 'Expected { id, format }' });
+    const r = await exportFromApp(s.id, String(s.format || 'html'));
+    if (r.error) return send(res, r.error === 'no-app' ? 409 : 502, { error: r.error });
+    res.writeHead(200, { 'Content-Type': 'application/octet-stream', 'Cache-Control': 'no-store' });
+    return res.end(r.file);
+  }
+  if (kind === 'export' && id && m === 'PUT') {
+    const done = exportsPending.get(id);
+    const buf = await readBody(req, 400 * 1024 * 1024);
+    if (!done) return send(res, 410, { error: 'Gone' });
+    exportsPending.delete(id);
+    const err = req.headers['x-export-error'];
+    done(err ? { error: decodeURIComponent(String(err)) } : { file: buf });
+    return send(res, 200, { ok: true });
+  }
   // Abrir un tablero en la pestaña de Mapache que ya está abierta (lo pide open_board).
   if (kind === 'open' && m === 'POST') {
     const s = await readJSON(req);
@@ -204,7 +234,17 @@ async function api(req, res, url) {
 
 // ---------- MCP por HTTP (Streamable HTTP, sin estado) ----------
 
-const mcp = MCP.makeServer({ store, open: (id, launch) => openFromHere(id, launch) });
+const mcp = MCP.makeServer({ store, open: (id, launch) => openFromHere(id, launch), exportBoard: (id, format) => exportHere(id, format) });
+async function exportHere(id, format) {
+  for (let i = 0; i < 40; i++) {
+    const r = await exportFromApp(id, format);
+    if (r.file) return r.file;
+    if (r.error !== 'no-app') throw new Error(r.error);
+    if (i === 0) await Launch.openURL(`http://localhost:${PORT}/#m=${encodeURIComponent(id)}`);
+    await new Promise((ok) => setTimeout(ok, 500));
+  }
+  throw new Error('Mapache needs to be open in a browser to export. Open it and try again');
+}
 async function openFromHere(id, launch) {
   const url = `http://localhost:${PORT}/#m=${encodeURIComponent(id)}`;
   if (launch && clients.size) broadcast('show', { id });

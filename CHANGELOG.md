@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.4.1 — 2026-10-14
+
+**Share a board with anyone.**
+
+### Added
+- **Export menu** (top right): a **single web page** anyone can open in a browser (zoom and pan, text and links stay
+  real, nothing to install), **PDF**, **PNG** and **SVG**.
+- **Your agent can export too:** the `export_board` MCP tool and `mapache export <board> --format html|pdf|png|svg`
+  save the file in Downloads (or where you say). The app draws it, so it opens the board in the browser if needed.
+- Tested with the Claude Code MCP client (connects) and with Codex (creates and reads boards end to end).
+
 ## 0.4.0 — 2026-10-14
 
 **Your AI agent can now work on your boards, and the app speaks English.**

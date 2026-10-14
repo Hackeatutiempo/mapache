@@ -147,6 +147,18 @@ named `map:<rootId>`.
 - New content is placed in free space: right of or below what is there, whichever keeps the board closest to a
   screen's shape, using the real mind map layout with estimated text sizes.
 
+## Export and share
+
+- Every format starts from one self-contained SVG of the board (`buildSVG`): each layer's HTML in a `foreignObject`
+  with the stylesheet inside, plus the line and connector SVG.
+- **PNG** and **PDF** draw that SVG on a canvas (2× when the size allows). The PDF is written by hand: one page the
+  size of the board with the image as JPEG (`/DCTDecode`), no library.
+- **HTML** is a single file: the SVG as a JSON string, parsed with `DOMParser` (so the CDATA stylesheet survives) and
+  shown with a tiny pan and zoom viewer. Text and links stay real text. Uploaded videos become a placeholder, since
+  they only live in the app.
+- Agents export through the app: `export_board` asks the server, which sends an `export` event to the most recently
+  connected tab; that tab opens the board, builds the file and uploads it to `/api/export/<request>`.
+
 ## Planned team server
 
 - Accounts with email and password, projects with roles, invite links, shipped as a Docker image.

@@ -233,6 +233,7 @@
     });
     es.addEventListener('folders', () => serial('folders', syncFolders));
     es.addEventListener('show', (e) => emit({ type: 'open', id: JSON.parse(e.data).id }));
+    es.addEventListener('export', (e) => emit({ type: 'export', ...JSON.parse(e.data) }));
     es.onerror = () => { if (mode === 'online') setMode('offline'); };
   }
 

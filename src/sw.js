@@ -1,5 +1,5 @@
 // Permite abrir la app aunque el servidor local no esté en marcha (usa la última versión guardada).
-const CACHE = 'mapache-v31';
+const CACHE = 'mapache-v32';
 const FILES = ['./', 'index.html', 'styles.css', 'i18n-en.js', 'i18n.js', 'layout.js', 'icons.js', 'shapes.js', 'tables.js', 'charts.js', 'connectors.js', 'arrange.js', 'ink.js', 'merge.js', 'store.js', 'sidebar.js', 'app.js', 'manifest.webmanifest', 'icon.svg', 'creator.webp'];
 
 self.addEventListener('install', (e) => {

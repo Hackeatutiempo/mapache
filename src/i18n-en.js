@@ -626,6 +626,22 @@
     'Tus tableros se guardan en {dir}. Tu agente usa esos mismos archivos.': 'Your boards are saved in {dir}. Your agent uses the same files.',
     'Ahora Mapache no está en marcha en este ordenador. Ábrelo con «Abrir Mapache» (o npm start) para que tu agente y esta pestaña compartan los tableros.':
       'Mapache is not running on this computer right now. Open it with "Abrir Mapache" (or npm start) so your agent and this tab share the same boards.',
+    // ---------- Exportar y compartir ----------
+    'Exportar o compartir': 'Export or share',
+    'Exportar o compartir este tablero': 'Export or share this board',
+    'Página web para compartir (.html)': 'Web page to share (.html)',
+    'PDF': 'PDF',
+    'Imagen PNG': 'PNG image',
+    'Imagen SVG (vectorial)': 'SVG image (vector)',
+    'el tablero es demasiado grande': 'the board is too large',
+    'Tu agente ha exportado este tablero': 'Your agent exported this board',
+    'Vídeo (se ve en la app)': 'Video (plays in the app)',
+    'Encajar': 'Fit',
+    'Hecho con': 'Made with',
+    'Acercar': 'Zoom in',
+    'Alejar': 'Zoom out',
+    'Arrastra para moverte · Ctrl + rueda para hacer zoom': 'Drag to move around · Ctrl + wheel to zoom',
+
     'Copiado': 'Copied',
     'No se pudo copiar: selecciónalo y cópialo a mano': 'Couldn’t copy: select it and copy it by hand',
   };

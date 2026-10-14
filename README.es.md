@@ -131,6 +131,11 @@ y en `node bin/mapache.js help`.
 ### Tus datos, en gráficos
 <p align="center"><img src="docs/feature-data.png" width="760" alt="Una tabla y el gráfico de columnas creado con ella"></p>
 
+### Compártelo con quien quieras
+Exporta un tablero como **una sola página web**: mándala por email o por chat y se abre en cualquier navegador, con
+zoom y desplazamiento, sin instalar nada. O como PDF, PNG o SVG. Tu agente también puede hacerlo («guárdame este
+tablero en PDF en el escritorio»).
+
 ### Claro u oscuro, como prefieras
 <p align="center"><img src="docs/screenshot-light.png" width="860" alt="Mapache en modo claro con carpetas, un mapa mental, notas, un diagrama y un gráfico"></p>
 
@@ -224,6 +229,8 @@ botón hasta donde lo quieras.
 - **Formato del texto:** título, lista o checklist se aplican a las líneas seleccionadas; color, resaltado, negrita,
   cursiva y enlace, a lo seleccionado. Las notas, textos y formas también se alinean a la izquierda, centro o derecha.
   Las formas crecen con su texto.
+- **Exportar y compartir:** el botón de imagen de arriba a la derecha guarda el tablero como página web para compartir
+  (un solo archivo .html que se abre en cualquier navegador), PDF, PNG o SVG.
 - **Tema:** botón de sol o luna arriba a la derecha (oscuro, claro o según el sistema).
 - **Idioma:** español o inglés, según tu navegador; se cambia con el botón del globo, junto al del tema.
 
@@ -236,7 +243,7 @@ Pulsa **?** dentro de la app para ver todos los atajos.
 - [x] Interfaz en inglés
 - [x] Tableros como archivos en tu ordenador, sincronizados en directo entre pestañas y navegadores
 - [x] Servidor MCP y línea de comandos para que los agentes de IA lean y editen tableros
-- [ ] Compartir un tablero como un solo archivo HTML o PDF
+- [x] Compartir un tablero como una sola página web, PDF, PNG o SVG
 - [ ] Servidor para equipos con Docker: cuentas, proyectos y enlaces de invitación
 - [ ] Colaboración en tiempo real (CRDT, sigue funcionando sin conexión)
 - [ ] Comentarios y menciones

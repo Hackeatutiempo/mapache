@@ -149,6 +149,26 @@ test('tools: a whole agent session on a fresh folder', async () => {
   assert.match(await call('delete_board', { board: 'Plan' }), /trash/);
 });
 
+test('tools: export_board saves what the app renders, without overwriting', async () => {
+  const store = Store.open(tmp());
+  const out = tmp();
+  const asked = [];
+  const ctx = { store, exportBoard: async (id, format) => { asked.push([id, format]); return Buffer.from(`<!doctype html>${format}`); } };
+  await Tools.call('create_board', { title: 'Share: me / now?' }, ctx);
+  const first = await Tools.call('export_board', { board: 'Share', path: out }, ctx);
+  const second = await Tools.call('export_board', { board: 'Share', path: out, format: 'pdf' }, ctx);
+  const third = await Tools.call('export_board', { board: 'Share', path: out }, ctx);
+  assert.deepStrictEqual(asked.map((a) => a[1]), ['html', 'pdf', 'html']);
+  assert.deepStrictEqual(fs.readdirSync(out).sort(), ['Share me  now (2).html', 'Share me  now.html', 'Share me  now.pdf']);
+  assert.match(first, /opens in any browser/);
+  assert.match(second, /as PDF/);
+  assert.match(third, /\(2\)\.html/);
+  const named = path.join(out, 'custom.html');
+  await Tools.call('export_board', { board: 'Share', path: named }, ctx);
+  assert.ok(fs.existsSync(named));
+  await assert.rejects(Tools.call('export_board', { board: 'Share' }, { store }), /needs the Mapache app/);
+});
+
 // Cliente MCP mínimo: arranca `mapache mcp` y habla JSON-RPC por stdio.
 function mcpSession(dataDir) {
   const p = spawn(process.execPath, [path.join(__dirname, '..', 'bin', 'mapache.js'), 'mcp'], { env: { ...process.env, MAPACHE_DATA: dataDir }, stdio: ['pipe', 'pipe', 'pipe'] });
@@ -180,7 +200,7 @@ test('mcp: handshake, tool list and calls over stdio', async () => {
     s.notify('notifications/initialized');
     const list = await s.rpc('tools/list', {});
     const names = list.result.tools.map((t) => t.name);
-    for (const n of ['list_boards', 'read_board', 'create_board', 'add_nodes', 'add_items', 'connect', 'open_board']) assert.ok(names.includes(n), n);
+    for (const n of ['list_boards', 'read_board', 'create_board', 'add_nodes', 'add_items', 'connect', 'export_board', 'open_board']) assert.ok(names.includes(n), n);
     for (const t of list.result.tools) assert.strictEqual(t.inputSchema.type, 'object');
     const made = await s.rpc('tools/call', { name: 'create_board', arguments: { title: 'From MCP', outline: 'From MCP\n  Child' } });
     assert.match(made.result.content[0].text, /Created board/);

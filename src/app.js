@@ -313,7 +313,24 @@
     else if (e.type === 'open' && e.id) {
       if (await Store.get(e.id)) { if (!map || map.id !== e.id) await openMap(e.id); window.focus(); }
     } else if (e.type === 'status') updateSaveTip();
+    else if (e.type === 'export') exportForAgent(e);
   });
+
+  // Tu agente pidió exportar un tablero: se abre (si no lo estaba), se dibuja y se devuelve el archivo.
+  async function exportForAgent({ reqId, id, format }) {
+    const headers = { 'Content-Type': 'application/octet-stream' };
+    let body = '';
+    try {
+      if (!map || map.id !== id) {
+        if (!(await Store.get(id))) throw new Error('This board is not in this browser yet');
+        await openMap(id);
+        await new Promise((r) => setTimeout(r, 400));
+      }
+      body = await buildImage(['html', 'pdf', 'png', 'svg'].includes(format) ? format : 'html');
+      toast(t('Tu agente ha exportado este tablero'));
+    } catch (err) { headers['X-Export-Error'] = encodeURIComponent(err.message); }
+    fetch(`api/export/${encodeURIComponent(reqId)}`, { method: 'PUT', headers, body }).catch(() => {});
+  }
 
   // Dónde se guarda: en los archivos de tu ordenador (con servidor) o solo en este navegador.
   function updateSaveTip() {
@@ -2940,6 +2957,10 @@
       html = item('media-file', `${UI.upload} ${t('Subir imagen o vídeo…')}`) + '<div class="menu-sep"></div>' +
         `<div class="menu-label">${t('O pega el enlace de un vídeo<br>(YouTube, Vimeo, Loom o .mp4)')}</div>` +
         `<input class="title-input media-url" placeholder="https://…" spellcheck="false" /><div class="media-hint" hidden>${t('No reconozco ese enlace')}</div>`;
+    } else if (kind === 'menu-export') {
+      html = `<div class="menu-label">${t('Exportar o compartir este tablero')}</div>` +
+        item('export-html', `${UI.globe} ${t('Página web para compartir (.html)')}`) + item('export-pdf', `${UI.download} ${t('PDF')}`) +
+        item('export-png', `${UI.image} ${t('Imagen PNG')}`) + item('export-svg', `${UI.image} ${t('Imagen SVG (vectorial)')}`);
     } else if (kind === 'menu-theme') {
       html = [['dark', t('Oscuro'), UI.moon], ['light', t('Claro'), UI.sun], ['system', t('Según el sistema'), UI.monitor]]
         .map(([k, label, ic]) => `<button class="menu-item${themePref === k ? ' on' : ''}" data-act="theme" data-arg="${k}">${ic} ${label}</button>`).join('');
@@ -3170,6 +3191,8 @@
       case 'delete': closePopover(); return deleteNode(id);
       case 'export-png': closePopover(); return exportImage('png');
       case 'export-svg': closePopover(); return exportImage('svg');
+      case 'export-pdf': closePopover(); return exportImage('pdf');
+      case 'export-html': closePopover(); return exportImage('html');
       case 'note-color': closePopover(); noteColor = arg; pref('mindmap:noteColor', arg); return setItem(selItem, { color: arg });
       case 'text-color': closePopover(); return setItem(selItem, { color: arg });
       case 'text-size': closePopover(); return setItem(selItem, { size: arg });
@@ -4533,7 +4556,8 @@
   }
 
   let cssText = null;
-  async function buildImage(kind) {
+  // El tablero entero como un SVG autónomo (el HTML de cada objeto va en foreignObject, con los estilos dentro).
+  async function buildSVG() {
     if (editing) commitEdit();
     const prev = [selectedId, selItem, hoverId, hoverItem];
     selectedId = null; selItem = null; hoverId = null; hoverItem = null;
@@ -4552,22 +4576,156 @@
       `<g transform="translate(${ox},${oy})">${gLines.innerHTML}${gUI.innerHTML}</g>${fo(html(world) + html(frontLayer))}<g transform="translate(${ox},${oy})">${gConns.innerHTML}</g></svg>`;
     [selectedId, selItem, hoverId, hoverItem] = prev;
     render();
-    if (kind === 'svg') return new Blob([svg], { type: 'image/svg+xml' });
+    return { svg, w, h };
+  }
+
+  // Dibuja el SVG en un lienzo, al doble de resolución si cabe (los navegadores limitan el tamaño de un lienzo).
+  async function svgCanvas({ svg, w, h }) {
     const img = new Image();
     img.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
     await img.decode();
-    const scale = 2;
-    const canvas = Object.assign(document.createElement('canvas'), { width: w * scale, height: h * scale });
+    const scale = Math.min(2, 12000 / Math.max(w, h), Math.sqrt(60e6 / (w * h)));
+    const canvas = Object.assign(document.createElement('canvas'), { width: Math.round(w * scale), height: Math.round(h * scale) });
     const ctx = canvas.getContext('2d');
     ctx.scale(scale, scale);
     ctx.drawImage(img, 0, 0);
-    return new Promise((ok) => canvas.toBlob(ok, 'image/png'));
+    return canvas;
+  }
+  const canvasBlob = (canvas, type, q) => new Promise((ok, ko) => canvas.toBlob((b) => (b ? ok(b) : ko(new Error(t('el tablero es demasiado grande')))), type, q));
+
+  async function buildImage(kind) {
+    const out = await buildSVG();
+    if (kind === 'svg') return new Blob([out.svg], { type: 'image/svg+xml' });
+    if (kind === 'html') return new Blob([standaloneHTML(out)], { type: 'text/html' });
+    const canvas = await svgCanvas(out);
+    if (kind === 'pdf') {
+      const jpeg = new Uint8Array(await (await canvasBlob(canvas, 'image/jpeg', 0.92)).arrayBuffer());
+      return makePDF(jpeg, canvas.width, canvas.height, out.w * 0.75, out.h * 0.75, titleOf(map));
+    }
+    return canvasBlob(canvas, 'image/png');
   }
 
+  // PDF de una página con el tablero como imagen (sin dependencias: un PDF mínimo escrito a mano).
+  function makePDF(jpeg, iw, ih, pw, ph, title) {
+    const enc = new TextEncoder();
+    const chunks = [];
+    const offs = [];
+    let len = 0;
+    const push = (x) => { const b = typeof x === 'string' ? enc.encode(x) : x; chunks.push(b); len += b.length; };
+    const obj = (n, ...parts) => { offs[n] = len; push(`${n} 0 obj\n`); parts.forEach(push); push('\nendobj\n'); };
+    const str = (s) => `<FEFF${[...String(s)].map((c) => c.charCodeAt(0).toString(16).padStart(4, '0')).join('')}>`;
+    const W = Math.round(pw * 100) / 100, H = Math.round(ph * 100) / 100;
+    push('%PDF-1.4\n%\u00e2\u00e3\u00cf\u00d3\n');
+    obj(1, '<< /Type /Catalog /Pages 2 0 R >>');
+    obj(2, '<< /Type /Pages /Kids [3 0 R] /Count 1 >>');
+    obj(3, `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${W} ${H}] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>`);
+    obj(4, `<< /Type /XObject /Subtype /Image /Width ${iw} /Height ${ih} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpeg.length} >>\nstream\n`, jpeg, '\nendstream');
+    const content = `q ${W} 0 0 ${H} 0 0 cm /Im0 Do Q`;
+    obj(5, `<< /Length ${content.length} >>\nstream\n${content}\nendstream`);
+    obj(6, `<< /Title ${str(title)} /Producer (Mapache) /Creator (Mapache) >>`);
+    const xref = len;
+    push(`xref\n0 7\n0000000000 65535 f \n${offs.slice(1).map((o) => `${String(o).padStart(10, '0')} 00000 n \n`).join('')}`);
+    push(`trailer\n<< /Size 7 /Root 1 0 R /Info 6 0 R >>\nstartxref\n${xref}\n%%EOF\n`);
+    return new Blob(chunks, { type: 'application/pdf' });
+  }
+
+  // Página web de un solo archivo para compartir el tablero: se abre en cualquier navegador, sin instalar nada,
+  // con zoom y desplazamiento. Los textos y enlaces siguen siendo texto (se pueden buscar y pulsar).
+  function standaloneHTML({ svg, w, h }) {
+    const title = titleOf(map);
+    const light = theme === 'light';
+    // Los vídeos subidos solo existen en la app: en la página quedan como un aviso.
+    const clean = svg.replace(/<video\b[^>]*>(?:<\/video>)?/g, `<div class="video-missing">${esc(t('Vídeo (se ve en la app)'))}</div>`);
+    const data = JSON.stringify(clean).replace(/</g, '\\u003c').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
+    const ui = light ? { bar: '#ffffff', line: '#dfe3e8', ink: '#1f2733', muted: '#5b6573', hover: '#eef1f5' } : { bar: '#1a222c', line: '#2c3644', ink: '#eef1f5', muted: '#9aa5b4', hover: '#253040' };
+    const L10N = { fit: t('Encajar'), made: t('Hecho con'), zin: t('Acercar'), zout: t('Alejar'), hint: t('Arrastra para moverte · Ctrl + rueda para hacer zoom') };
+    return `<!doctype html>
+<html lang="${I18n.lang}" data-theme="${theme}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="generator" content="Mapache">
+<title>${esc(title)}</title>
+<style>
+html, body { margin: 0; height: 100%; overflow: hidden; background: ${THEME_COLORS[theme].bg}; }
+#mp-view { position: fixed; inset: 0; overflow: hidden; cursor: grab; touch-action: none; }
+#mp-view.drag { cursor: grabbing; }
+#mp-view > svg { position: absolute; left: 0; top: 0; transform-origin: 0 0; overflow: visible; }
+.mp-bar { position: fixed; z-index: 10; display: flex; align-items: center; gap: 4px; padding: 6px 8px; border-radius: 12px; background: ${ui.bar}; border: 1px solid ${ui.line};
+  color: ${ui.ink}; font: 13px/1.3 "Segoe UI", system-ui, -apple-system, sans-serif; box-shadow: 0 6px 24px rgb(0 0 0 / 0.18); }
+.mp-title { left: 16px; top: 16px; max-width: calc(100vw - 32px); }
+.mp-title b { font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mp-title span, .mp-title a { color: ${ui.muted}; white-space: nowrap; }
+.mp-title a { text-decoration: none; }
+.mp-title a:hover { color: ${ui.ink}; }
+.mp-zoom { right: 16px; bottom: 16px; }
+.mp-zoom button { font: inherit; color: inherit; background: none; border: 0; min-width: 30px; height: 30px; border-radius: 8px; cursor: pointer; }
+.mp-zoom button:hover { background: ${ui.hover}; }
+.mp-zoom output { min-width: 48px; text-align: center; color: ${ui.muted}; }
+.mp-hint { left: 50%; bottom: 16px; transform: translateX(-50%); color: ${ui.muted}; transition: opacity .6s; }
+@media (max-width: 640px) { .mp-hint { display: none; } }
+</style>
+</head>
+<body>
+<div id="mp-view"></div>
+<div class="mp-bar mp-title"><b>${esc(title)}</b><span>·</span><span>${esc(L10N.made)} <a href="https://github.com/Hackeatutiempo/mapache" target="_blank" rel="noopener">Mapache</a></span></div>
+<div class="mp-bar mp-zoom"><button data-z="out" title="${esc(L10N.zout)}">−</button><output>100%</output><button data-z="in" title="${esc(L10N.zin)}">+</button><button data-z="fit">${esc(L10N.fit)}</button></div>
+<div class="mp-bar mp-hint">${esc(L10N.hint)}</div>
+<script>
+(function () {
+  var SVG = ${data}, W = ${w}, H = ${h};
+  var view = document.getElementById('mp-view'), out = document.querySelector('.mp-zoom output');
+  var svg = document.importNode(new DOMParser().parseFromString(SVG, 'image/svg+xml').documentElement, true);
+  view.appendChild(svg);
+  var k = 1, x = 0, y = 0;
+  function apply() { svg.style.transform = 'translate(' + x + 'px,' + y + 'px) scale(' + k + ')'; out.textContent = Math.round(k * 100) + '%'; }
+  function fit() { var r = view.getBoundingClientRect(); k = Math.min(1.5, Math.min(r.width / W, (r.height - 60) / H) * 0.96); x = (r.width - W * k) / 2; y = (r.height - H * k) / 2 + 10; apply(); }
+  function zoom(f, cx, cy) { var r = view.getBoundingClientRect(); if (cx == null) { cx = r.width / 2; cy = r.height / 2; } var n = Math.max(0.05, Math.min(8, k * f)); x = cx - (cx - x) * n / k; y = cy - (cy - y) * n / k; k = n; apply(); }
+  view.addEventListener('wheel', function (e) {
+    e.preventDefault();
+    if (e.ctrlKey || e.metaKey) zoom(Math.exp(-e.deltaY * 0.0022), e.clientX, e.clientY);
+    else { x -= e.deltaX; y -= e.deltaY; apply(); }
+  }, { passive: false });
+  var pts = {}, last = null;
+  view.addEventListener('pointerdown', function (e) {
+    if (e.target.closest('a, iframe, video')) return;
+    pts[e.pointerId] = [e.clientX, e.clientY]; view.setPointerCapture(e.pointerId); view.classList.add('drag'); last = null;
+  });
+  view.addEventListener('pointermove', function (e) {
+    var p = pts[e.pointerId]; if (!p) return;
+    var ids = Object.keys(pts);
+    if (ids.length === 2) {
+      var o = pts[ids[0] == e.pointerId ? ids[1] : ids[0]];
+      var d = Math.hypot(e.clientX - o[0], e.clientY - o[1]);
+      if (last) zoom(d / last, (e.clientX + o[0]) / 2, (e.clientY + o[1]) / 2);
+      last = d;
+    } else { x += e.clientX - p[0]; y += e.clientY - p[1]; apply(); }
+    pts[e.pointerId] = [e.clientX, e.clientY];
+  });
+  function up(e) { delete pts[e.pointerId]; last = null; if (!Object.keys(pts).length) view.classList.remove('drag'); }
+  view.addEventListener('pointerup', up); view.addEventListener('pointercancel', up);
+  document.querySelector('.mp-zoom').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-z]'); if (!b) return;
+    if (b.dataset.z === 'in') zoom(1.25); else if (b.dataset.z === 'out') zoom(0.8); else fit();
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === '+' || e.key === '=') zoom(1.25); else if (e.key === '-') zoom(0.8); else if (e.key === '0') { k = 1; apply(); } else if (e.key === '1') fit();
+  });
+  window.addEventListener('resize', fit);
+  setTimeout(function () { var h = document.querySelector('.mp-hint'); if (h) h.style.opacity = '0'; }, 4000);
+  fit();
+})();
+</script>
+</body>
+</html>
+`;
+  }
+
+  const EXT = { png: 'png', svg: 'svg', pdf: 'pdf', html: 'html' };
   async function exportImage(kind) {
     const name = (titleOf(map) || t('mapa')).replace(/[\\/:*?"<>|]+/g, '').slice(0, 60);
     try {
-      download(`${name}.${kind}`, await buildImage(kind));
+      download(`${name}.${EXT[kind]}`, await buildImage(kind));
     } catch (err) {
       uiAlert(t('No se pudo crear la imagen ({msg}). Prueba a exportar en SVG.', { msg: err.message }));
     }
@@ -4764,7 +4922,7 @@
     }
   });
   $('#toggle-sidebar').addEventListener('click', () => { document.body.classList.toggle('no-sidebar'); applyView(); });
-  $('#export-png').addEventListener('click', () => exportImage('png'));
+  $('#export-png').addEventListener('click', (e) => openPopover('menu-export', e.currentTarget));
   $('#backup-export').addEventListener('click', exportBackup);
   $('#backup-import').addEventListener('click', () => $('#backup-file').click());
   $('#backup-file').addEventListener('change', (e) => { if (e.target.files[0]) importBackup(e.target.files[0]); e.target.value = ''; });
@@ -4806,7 +4964,7 @@
   window.mapache = {
     get doc() { return doc; }, get layout() { return layout; }, get selectedId() { return selectedId; },
     get selItem() { return selItem; }, get multi() { return [...multi, ...[...multiRoots].map(mapTok), ...[...multiNodes].map(nodeTok)]; }, get editing() { return editing; }, get tool() { return tool; },
-    selectNode, selectItem, addChild, addSibling, openMap, createMap, act, buildImage, createItem, addImages,
+    selectNode, selectItem, addChild, addSibling, openMap, createMap, act, buildImage, createItem, addImages, exportImage,
   };
 
   document.fonts.ready.then(start);

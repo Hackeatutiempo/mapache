@@ -129,6 +129,7 @@ these with your real paths):
 | `add_nodes`, `update_nodes`, `move_node`, `delete_nodes`, `add_mindmap` | Grow and edit mind maps from indented outlines |
 | `add_items`, `update_items`, `delete_items` | Sticky notes, text, shapes, sections, stickers, tables, charts and video embeds |
 | `connect` | Arrows between anything, with labels |
+| `export_board` | Save a board as a shareable web page, PDF, PNG or SVG |
 | `open_board` | Show a board in the browser |
 
 Agents write simple Markdown (`# heading`, `- bullet`, `[ ] task`, `**bold**`, links) and new content is placed in free
@@ -146,6 +147,7 @@ node bin/mapache.js show open                 # the board open in the app, as an
 node bin/mapache.js new "Launch plan" --outline @plan.txt
 node bin/mapache.js add open "Marketing" "Webinar" "Podcast"
 node bin/mapache.js tool add_items '{"board":"open","items":[{"type":"note","text":"Call Ana"}]}'
+node bin/mapache.js export open --format pdf  # save the open board as a PDF in Downloads
 node bin/mapache.js start | stop | status | open
 node bin/mapache.js autostart on              # start Mapache when you log in
 ```
@@ -174,6 +176,10 @@ update while you type. Color-blind-safe palettes in light and dark mode.
 
 <p align="center"><img src="docs/feature-data.png" width="760" alt="A table and the column chart built from it"></p>
 
+### Share it with anyone
+Export a board as **a single web page**: send it by email or chat and it opens in any browser, with zoom and pan,
+nothing to install. Or as PDF, PNG or SVG. Your agent can do it too ("save this board as a PDF on my desktop").
+
 ### Light or dark, your call
 <p align="center"><img src="docs/screenshot-light.png" width="860" alt="Mapache in light mode with folders, a mind map, notes, a flowchart and a chart"></p>
 
@@ -195,11 +201,11 @@ update while you type. Color-blind-safe palettes in light and dark mode.
 | **Guides** | Smart alignment guides snap edges and centers while you drag (hold Alt to skip) |
 | **Right-click menu** | Copy and paste style, save as default style, arrange, align, lock, wrap in section, snap to grid and copy a link to that spot on the board |
 | **Folders** | Nested folders and maps in the sidebar, drag to reorganize, a color and an icon for each |
-| **AI agents** | MCP server and command line with 17 tools; changes from your agent appear live and can be undone |
+| **AI agents** | MCP server and command line with 18 tools; changes from your agent appear live and can be undone |
 | **Sync** | Boards are files on your computer; every open tab and browser stays in sync, edits made offline sync later, and simultaneous changes are merged |
 | **Languages** | English and Spanish, following your browser (switch any time) |
 | **Themes** | Dark, light or follow the system |
-| **Export** | PNG image of the board, JSON backup of all maps, folders and videos |
+| **Share and export** | A single-file web page anyone can open in a browser (zoom and pan, no install), PDF, PNG, SVG, and a JSON backup of all maps, folders and videos |
 
 </details>
 
@@ -222,7 +228,7 @@ update while you type. Color-blind-safe palettes in light and dark mode.
 - [x] English interface
 - [x] Boards as local files, live sync between tabs and browsers
 - [x] MCP server and command line so AI agents can read and edit boards
-- [ ] Share a board as a single HTML file or PDF
+- [x] Share a board as a single HTML page, PDF, PNG or SVG
 - [ ] Self-hosted team server with Docker: accounts, projects and invite links
 - [ ] Real-time collaboration (CRDT, keeps working offline)
 - [ ] Comments and mentions
