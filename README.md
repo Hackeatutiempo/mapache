@@ -167,6 +167,8 @@ Run one Mapache for your whole team on your own server: **accounts with email an
 (admin, can edit, can view), live cursors and avatars of who is on each board**, and every change on everyone's
 screen as it happens. Each person can connect their own AI agent with a personal token.
 
+<p align="center"><img src="docs/team.png" width="860" alt="A team board in Mapache: another person's live cursor with her name, her avatar at the top, a comment pin and the mentions bell"></p>
+
 ```bash
 git clone https://github.com/Hackeatutiempo/mapache.git && cd mapache
 docker compose up -d          # then open http://<server>:4321 and use the setup code from: docker logs mapache

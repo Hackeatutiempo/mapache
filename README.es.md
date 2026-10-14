@@ -130,6 +130,8 @@ Monta un Mapache para todo tu equipo en vuestro propio servidor: **cuentas con e
 invitación, roles (admin, puede editar, solo ver), cursores en directo y quién está en cada tablero**, y cada cambio en
 la pantalla de todos al momento. Cada persona puede conectar su propio agente de IA con un token personal.
 
+<p align="center"><img src="docs/team.png" width="860" alt="Un tablero de equipo en Mapache: el cursor en directo de otra persona con su nombre, su avatar arriba, un comentario y la campana de menciones"></p>
+
 ```bash
 git clone https://github.com/Hackeatutiempo/mapache.git && cd mapache
 docker compose up -d          # abre http://<servidor>:4321 y usa el código que sale en: docker logs mapache
