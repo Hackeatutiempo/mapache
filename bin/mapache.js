@@ -43,8 +43,9 @@ async function textOf(v) {
   return v;
 }
 
-const ctx = () => ({ open: (id, launch) => openViaApp(id, launch), exportBoard: (id, format) => exportViaApp(id, format) });
-const run = async (name, args) => console.log(await Tools.call(name, args, ctx()));
+const ctx = (extra = {}) => ({ open: (id, launch) => openViaApp(id, launch), exportBoard: (id, format) => exportViaApp(id, format), ...extra });
+// Lo que se escribe desde la terminal (comentarios) va firmado como «Command line».
+const run = async (name, args) => console.log(await Tools.call(name, args, ctx({ client: { name: 'Command line' } })));
 
 // Exportar lo hace la app (la pestaña abierta). Si no hay ninguna, se abre el navegador en ese tablero y se espera.
 async function exportViaApp(id, format) {
@@ -96,6 +97,9 @@ Boards (for you or your AI agent)
   add <board> <parent> <text...>  Add branches under a node (or --outline <text|-|@file>)
   note <board> <text> [--color <c>]  Add a sticky note
   connect <board> <from> <to> [--label <text>]  Draw an arrow
+  comments <board> [--all]     Comment threads on a board (--all: also the resolved ones)
+  comment <board> <text> [--on <node or item>]
+                               Leave a comment, pinned to a node or item if you like
   export <board> [--format html|pdf|png|svg] [--out <folder or file>]
                                Save a board to share (default: a web page in Downloads)
   rename <board> <title>       Rename a board
@@ -312,6 +316,14 @@ async function main() {
     case 'connect': {
       const [board, from, to] = pos;
       return run('connect', { board, connections: [{ from, to, label: opt.label }] });
+    }
+    case 'comments':
+      return run('list_comments', { board: pos.join(' ') || 'open', include_resolved: !!opt.all });
+    case 'comment': {
+      const [board, ...text] = pos;
+      const body = (await textOf(opt.text)) || text.join(' ');
+      if (!board || !body) throw new Error('Use: mapache comment <board> <text> [--on <node or item>]');
+      return run('add_comment', { board, text: body, on: typeof opt.on === 'string' ? opt.on : undefined });
     }
     case 'export':
       return run('export_board', { board: pos.join(' ') || 'open', format: opt.format, path: opt.out });

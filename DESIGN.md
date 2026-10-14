@@ -24,6 +24,7 @@ A map is `{ id, title, folderId, doc, createdAt, updatedAt }`. The `doc`:
   settings: { layout: 'horizontal' | 'vertical', lines: 'curvy' | 'angular', origin: { x, y } },
   nodes: { [id]: { id, parentId, order, lines: [html], block: 'p'|'ul'|'ol'|'check'|'h1'|'h2'|'h3', checked: [], icon, style } },
   items: { [id]: { id, type, x, y, z, ... } },
+  comments: { [id]: { id, x, y, ref, dx, dy, author: { id, name }, text, mentions: [userId], createdAt, replies: { [id]: … }, resolved } },
 }
 ```
 
@@ -137,8 +138,8 @@ named `map:<rootId>`.
 
 ## Agents (`lib/tools.js`, `lib/mcp.js`, `bin/mapache.js`)
 
-- One set of tools (list, read, search, create and update boards, add and edit nodes, items and connectors, open a
-  board) is exposed twice: as an MCP server (`mapache mcp`, JSON-RPC over stdio, or Streamable HTTP on `/mcp`) and
+- One set of tools (list, read, search, create and update boards, add and edit nodes, items and connectors, list,
+  add, reply to and resolve comments, open a board) is exposed twice: as an MCP server (`mapache mcp`, JSON-RPC over stdio, or Streamable HTTP on `/mcp`) and
   as a command line (`mapache tool <name> <json>` plus friendly shortcuts such as `mapache add`).
 - Agents write Markdown-like text (`# heading`, `- bullet`, `[ ] task`, `**bold**`, links) and indented outlines;
   `lib/board.js` turns it into the app's line format and escapes everything else.
@@ -158,6 +159,22 @@ named `map:<rootId>`.
   they only live in the app.
 - Agents export through the app: `export_board` asks the server, which sends an `export` event to the most recently
   connected tab; that tab opens the board, builds the file and uploads it to `/api/export/<request>`.
+
+## Comments and mentions (`src/comments.js`)
+
+- A comment is a pin on the board with a thread of replies. It is free (`x, y`) or attached to an item or node
+  (`ref`, the same format as a connector end), and then follows it at `dx, dy` from its top-left corner; deleting
+  that object leaves the pin where it was. Replies are an object keyed by id, so replies written at the same time on
+  two sides both survive the merge; resolving on one side and replying on the other keeps both.
+- Pins live in their own layer, keep a constant size on screen (`scale(var(--ik))`) and never appear in exports.
+  The general selection (Ctrl+A, the marquee, delete) never touches them.
+- The author is the signed-in person (`MMStore.status().user`) or, without accounts, a profile of this browser
+  (`mindmap:name`, asked the first time you comment). Agents sign as `{ id: 'agent', name }` with their MCP client
+  name; the command line signs as "Command line".
+- Mentions are stored as user ids and shown as `@Name`; the `@` autocomplete lists `MMStore.members()`. The bell
+  counts unread mentions of you on every board; what you have read is kept per person in
+  `mindmap:mentions-seen:<userId>`. Without accounts, `@your name` from an agent also counts.
+- Shortcut `K`; a link with `&c=<commentId>` opens that thread.
 
 ## Team mode (`lib/auth.js`, `lib/team.js`, `src/team-ui.js`)
 

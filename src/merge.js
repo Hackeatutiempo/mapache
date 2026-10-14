@@ -1,6 +1,7 @@
 // Fusión a tres bandas de tableros: lo que cambiaste tú (ours) y lo que cambió otro a la vez, por ejemplo tu agente
 // de IA (theirs), sobre la última versión común (base). Se fusiona por nodo y por objeto, y dentro de cada uno por
-// campo; si los dos cambian el mismo campo, gana el tuyo. Funciona en el navegador y en Node.
+// campo; si los dos cambian el mismo campo, gana el tuyo. Los comentarios, igual (y sus respuestas, una a una).
+// Funciona en el navegador y en Node.
 // SPDX-License-Identifier: AGPL-3.0-or-later
 (function (root) {
   'use strict';
@@ -52,12 +53,14 @@
     if (!theirs) return copy(ours);
     const b = base || {};
     const out = fields(
-      { ...b, nodes: undefined, items: undefined },
-      { ...ours, nodes: undefined, items: undefined },
-      { ...theirs, nodes: undefined, items: undefined },
+      { ...b, nodes: undefined, items: undefined, comments: undefined },
+      { ...ours, nodes: undefined, items: undefined, comments: undefined },
+      { ...theirs, nodes: undefined, items: undefined, comments: undefined },
     );
     out.nodes = table(b.nodes, ours.nodes, theirs.nodes);
     out.items = table(b.items, ours.items, theirs.items);
+    // Comentarios, también por id; sus respuestas son un objeto por id, así que dos respuestas a la vez se suman.
+    if (b.comments || ours.comments || theirs.comments) out.comments = table(b.comments, ours.comments, theirs.comments);
     // Si un lado borró una rama mientras el otro le añadía hijos, la rama vuelve para no dejar nodos sueltos.
     for (const n of Object.values(out.nodes)) {
       let p = n.parentId;

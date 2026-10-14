@@ -11,6 +11,7 @@
   const Arrange = window.MMArrange;
   const Ink = window.MMInk;
   const Merge = window.MMMerge;
+  const Comments = window.MMComments;
   const I18n = window.MMI18n;
   const t = I18n.t;
 
@@ -173,6 +174,7 @@
     d.settings = Object.assign({ layout: 'horizontal', lines: 'curvy' }, d.settings);
     d.settings.origin = d.settings.origin || { x: 0, y: 0 };
     d.items = d.items || {};
+    d.comments = d.comments && typeof d.comments === 'object' && !Array.isArray(d.comments) ? d.comments : {};
     for (const n of Object.values(d.nodes)) {
       n.style = n.style || {};
       if (!Array.isArray(n.lines)) n.lines = [esc(n.text || '')];
@@ -976,6 +978,7 @@
     stage.style.backgroundPosition = `${view.x - gs / 2}px ${view.y - gs / 2}px`;
     window.dispatchEvent(new Event('mapache:view'));
     positionContextbar();
+    Comments.onView();
   }
 
   const stageRect = () => stage.getBoundingClientRect();
@@ -1227,6 +1230,7 @@
         detachConns(new Set(nids.map((x) => `node:${x}`)));
         for (const n of nids) delete doc.nodes[n];
       }
+      clearMulti(); // antes de dibujar: la barra de la selección ya no debe ver lo borrado
     });
     clearSelection();
   }
@@ -1438,6 +1442,7 @@
       pendingFit = false;
       applyView();
     }
+    if (h.get('c')) Comments.open(h.get('c'));
     window.history.replaceState(null, '', location.pathname + location.search); // `history` aquí es el de deshacer
     return true;
   }
@@ -1625,8 +1630,9 @@
         if (it.type === 'shape') fitShapeText(rec, it);
       }
     }
-    // Los conectores siguen a los objetos: se recalculan después de colocarlos.
+    // Los conectores y las chinchetas de los comentarios siguen a los objetos: se recalculan después de colocarlos.
     renderConnectors();
+    Comments.render();
   }
 
   const isLight = (key) => ['white', 'yellow', 'silver'].includes(key);
@@ -1825,8 +1831,9 @@
   const DIR_SIDE = { right: 'right', left: 'left', up: 'top', down: 'bottom' };
   const OPPOSITE = { right: 'left', left: 'right', top: 'bottom', bottom: 'top' };
 
-  // Al borrar objetos o nodos, sus conectores no desaparecen: el extremo se queda donde estaba.
+  // Al borrar objetos o nodos, sus conectores no desaparecen: el extremo se queda donde estaba (y sus comentarios, también).
   function detachConns(refs) {
+    Comments.detach(refs);
     for (const c of Object.values(doc.items)) {
       if (c.type !== 'conn') continue;
       if (!refs.has(c.from.ref) && !refs.has(c.to.ref)) continue;
@@ -2375,6 +2382,7 @@
     stage.classList.toggle('placing', isPlacing(t));
     stage.classList.toggle('hand', t === 'hand');
     stage.classList.toggle('connecting', t === 'conn');
+    stage.classList.toggle('commenting', t === 'comment');
     if (t !== 'draw') selInks.clear();
     syncDrawbox();
   }
@@ -2397,6 +2405,7 @@
     if (t === 'shape') return openPopover('menu-shapes', $('#toolbox [data-tool="shape"]'));
     if (t === 'sticker') { pendingSticker = at; return openPopover('menu-sticker', $('#toolbox [data-tool="sticker"]')); }
     if (t === 'image') { pendingImage = at; return openPopover('menu-media', $('#toolbox [data-tool="image"]')); }
+    if (t === 'comment') return Comments.startDraft(at, targetAt(at));
   }
 
   let pendingSticker = null;
@@ -3270,6 +3279,7 @@
       case 'ctx-add-child': return addChild(selectedId);
       case 'ctx-add-sibling': return addSibling(selectedId);
       case 'ctx-place': return placeTool(arg, ctxPoint || here());
+      case 'comment-add': { const p = ctxPoint || here(); return Comments.startDraft(p, targetAt(p)); }
       case 'ctx-fit': return fit();
       case 'ctx-zoom100': return zoomTo(1);
       case 'multi-wrap': { closePopover(); const r = multiBounds(); clearSelection(); return wrapInSection(r); }
@@ -3421,7 +3431,7 @@
         h += cSep + cSub(UI.front, t('Organizar'), cItem('item-front', UI.front, t('Traer al frente')) + cItem('item-bottom', UI.back, t('Enviar al fondo')) +
           (it.type !== 'section' ? cItem('item-back', UI.back, t('Enviar detrás del mapa')) : ''));
       }
-      h += cSep + cItem('item-lock', UI.lock, t('Bloquear'), 'Shift L');
+      h += cSep + cItem('item-lock', UI.lock, t('Bloquear'), 'Shift L') + cItem('comment-add', UI.comment, t('Comentar'), 'K');
       if (it.type !== 'conn') h += cSep + cItem('wrap-section', UI.section, t('Meter en sección')) + cSep + cItem('snap-grid', UI.snap, t('Ajustar a la cuadrícula'));
       return h + cItem('copy-link', UI.link, t('Copiar enlace a esta posición'));
     }
@@ -3430,13 +3440,14 @@
       const b = layout.boxes[selectedId];
       return cItem('copy', UI.copy, t('Copiar'), 'Ctrl C') + (root ? '' : cItem('cut', UI.cut, t('Cortar'), 'Ctrl X')) + cItem('paste', UI.paste, t('Pegar como hijo'), 'Ctrl V', '', !clipboard) +
         (root ? '' : cItem('duplicate', UI.duplicate, t('Duplicar'), 'Ctrl D') + cItem('delete', UI.trash, t('Borrar'), t('Supr'))) + cSep +
-        cItem('ctx-add-child', UI.plus, t('Añadir hijo'), 'Tab') + (root ? '' : cItem('ctx-add-sibling', UI.plus, t('Añadir hermano'))) +
+        cItem('ctx-add-child', UI.plus, t('Añadir hijo'), 'Tab') + (root ? '' : cItem('ctx-add-sibling', UI.plus, t('Añadir hermano'))) + cItem('comment-add', UI.comment, t('Comentar'), 'K') +
         (b && b.children.length ? cItem('collapse', UI.collapse, b.collapsed ? t('Desplegar') : t('Plegar'), 'Ctrl /') : '') + cSep +
         cItem('wrap-section', UI.section, t('Meter el mapa en una sección')) + cItem('export-png', UI.download, t('Exportar mapa como PNG')) + cItem('copy-link', UI.link, t('Copiar enlace a esta posición'));
     }
     return cItem('paste', UI.paste, t('Pegar aquí'), 'Ctrl V', '', !clipboard) + cItem('select-all', UI.cursor, t('Seleccionar todo'), 'Ctrl A') + cSep +
       cItem('ctx-place', UI.map, t('Mapa mental'), 'M', 'mindmap') + cItem('ctx-place', UI.note, t('Nota'), 'N', 'note') + cItem('ctx-place', UI.shape, t('Forma'), 'R', 'shape:rect') + cItem('ctx-place', UI.text, t('Texto'), 'T', 'text') +
-      cItem('ctx-place', UI.sticker, t('Sticker'), 'X', 'sticker') + cItem('ctx-place', UI.image, t('Imagen o vídeo'), 'I', 'image') + cItem('ctx-place', UI.table, t('Tabla'), 'E', 'table') + cItem('ctx-place', UI.section, t('Sección'), '.', 'section') + cSep +
+      cItem('ctx-place', UI.sticker, t('Sticker'), 'X', 'sticker') + cItem('ctx-place', UI.image, t('Imagen o vídeo'), 'I', 'image') + cItem('ctx-place', UI.table, t('Tabla'), 'E', 'table') + cItem('ctx-place', UI.section, t('Sección'), '.', 'section') +
+      cItem('comment-add', UI.comment, t('Comentario'), 'K') + cSep +
       cItem('ctx-fit', UI.fit, t('Ver todo'), '1') + cItem('ctx-zoom100', UI.size, t('Zoom al 100 %'), '0') + cItem('copy-link', UI.link, t('Copiar enlace a esta posición'));
   }
 
@@ -3649,6 +3660,13 @@
       const t = targetAt(world0);
       drag = { kind: 'newconn', from: t ? { ref: t.ref, side: 'auto' } : { x: Math.round(world0.x), y: Math.round(world0.y) }, sx: e.clientX, sy: e.clientY, cur: null, hover: null };
       return;
+    }
+
+    // Comentario: el clic deja una chincheta (enganchada al objeto o nodo que haya debajo) y abre el cuadro para escribir.
+    if (tool === 'comment' && e.button === 0) {
+      if (editing) commitEdit();
+      e.preventDefault();
+      return Comments.startDraft(world0, targetAt(world0));
     }
 
     // Herramienta de colocar activa: el clic crea el objeto.
@@ -4227,6 +4245,7 @@
     if (!agentBox.hidden) { if (e.key === 'Escape') { e.preventDefault(); toggleAgent(); } return; }
     if (e.key === 'Escape' && !ctx.hidden) { e.preventDefault(); closeCtx(); return; }
     if (e.key === 'Escape' && !pop.hidden) { e.preventDefault(); closePopover(); return; }
+    if (e.key === 'Escape' && !inField && !editing && Comments.escape()) { e.preventDefault(); return; }
     if (inField) return;
     if (readOnly() && !editing && !(e.key === 'Escape' || e.key === '?' || e.key === ' ' || /^[01+=-]$/.test(e.key) || ((e.ctrlKey || e.metaKey) && /^[cfa]$/i.test(e.key)))) {
       if (e.key.length === 1 || ['Tab', 'Enter', 'Delete', 'Backspace'].includes(e.key)) e.preventDefault();
@@ -4358,6 +4377,7 @@
       case 'KeyI': stop(); return placeTool('image', here());
       case 'KeyV': stop(); return setTool('select');
       case 'KeyC': stop(); return setTool('conn');
+      case 'KeyK': stop(); return setTool(tool === 'comment' ? 'select' : 'comment');
       case 'KeyH': stop(); setTool('draw'); return setDrawTool(e.shiftKey ? 'highlighter' : 'pen');
       case 'KeyQ': stop(); quickAddHidden = !quickAddHidden; return render();
       default: break;
@@ -4515,6 +4535,12 @@
     currentId: () => (map ? map.id : null),
     currentTitle: () => (map ? titleOf(map) : ''),
     openMap, createMap, deleteMap, moveMap, renameMap, duplicateMap,
+  });
+
+  // Comentarios y menciones (src/comments.js): sus chinchetas, el hilo, el panel y la bandeja de menciones.
+  Comments.init({
+    Store, UI, esc, pref, stage, view, plainText, titleOf, openMap, setTool, refRect, targetAt, mutate, toast, applyView, toWorld, stageRect, clearSelection,
+    getDoc: () => doc, getMap: () => map, uiConfirm: (...args) => uiConfirm(...args),
   });
 
   titleInput.addEventListener('input', () => { if (map) { map.title = titleInput.value; saveSoon(); } });
@@ -4920,7 +4946,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: ${THEME_COLO
     const el = document.querySelector(`#zoombar [data-cmd="${cmd}"]`);
     if (el) el.innerHTML = icon;
   }
-  for (const [t, icon] of [['select', UI.cursor], ['hand', UI.hand], ['shape', UI.shape], ['mindmap', UI.map], ['note', UI.note], ['conn', UI.connector], ['text', UI.text], ['sticker', UI.sticker], ['image', UI.image], ['table', UI.table], ['draw', UI.draw], ['section', UI.section]]) {
+  for (const [t, icon] of [['select', UI.cursor], ['hand', UI.hand], ['shape', UI.shape], ['mindmap', UI.map], ['note', UI.note], ['conn', UI.connector], ['text', UI.text], ['sticker', UI.sticker], ['image', UI.image], ['table', UI.table], ['draw', UI.draw], ['section', UI.section], ['comment', UI.comment]]) {
     document.querySelector(`#toolbox [data-tool="${t}"]`).innerHTML = icon;
   }
   for (const [k, icon] of [['close', UI.close], ['pen', UI.pen], ['highlighter', UI.highlighter], ['eraser', UI.eraser], ['lasso', UI.lasso], ['thin', UI.thin], ['thick', UI.thick], ['detect', UI.detect]]) {
@@ -4988,7 +5014,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: ${THEME_COLO
     get doc() { return doc; }, get layout() { return layout; }, get selectedId() { return selectedId; },
     get selItem() { return selItem; }, get multi() { return [...multi, ...[...multiRoots].map(mapTok), ...[...multiNodes].map(nodeTok)]; }, get editing() { return editing; }, get tool() { return tool; },
     selectNode, selectItem, addChild, addSibling, openMap, createMap, act, buildImage, createItem, addImages, exportImage,
-    get view() { return view; }, get mapId() { return map ? map.id : null; }, toWorld, toast, uiConfirm, uiAlert,
+    get view() { return view; }, get mapId() { return map ? map.id : null; }, toWorld, toast, uiConfirm, uiAlert, comments: Comments, setTool,
   };
 
   document.fonts.ready.then(start);

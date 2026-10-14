@@ -34,6 +34,8 @@
       <span id="save-state"></span>
       <div id="presence"></div>
       <div class="top-actions">
+        <button id="comments-btn" class="icon-btn" data-tip="Comentarios" aria-label="Comentarios"></button>
+        <button id="mentions-btn" class="icon-btn" data-tip="Menciones" aria-label="Menciones" hidden></button>
         <button id="theme-btn" class="icon-btn" data-tip="Tema claro u oscuro"></button>
         <button id="lang-btn" class="icon-btn" data-tip="Idioma"></button>
         <button id="export-png" class="icon-btn" data-tip="Exportar o compartir"></button>
@@ -65,6 +67,7 @@
         <button data-tool="draw" class="tool" data-tip="Dibujo a mano · H"></button>
         <span class="tool-sep"></span>
         <button data-tool="section" class="tool" data-tip="Sección · ."></button>
+        <button data-tool="comment" class="tool" data-tip="Comentario · K"></button>
       </div>
       <div id="drawbox" aria-label="Dibujo a mano" hidden>
         <button data-draw="close" class="tool" data-tip="Salir del dibujo · Esc"></button>
@@ -203,6 +206,7 @@
             <dt>.</dt><dd>Sección</dd>
             <dt>E</dt><dd>Tabla (o importar CSV)</dd>
             <dt>C</dt><dd>Conector (arrastra de un objeto a otro)</dd>
+            <dt>K</dt><dd>Comentario (clic en el lienzo o sobre un objeto)</dd>
             <dt>H · Shift + H</dt><dd>Dibujo a mano · subrayador</dd>
             <dt>Arrastrar archivo / Ctrl + V</dt><dd>Añadir imagen, vídeo o enlace de YouTube</dd>
             <dt>Pegar desde Excel o Sheets</dt><dd>Se convierte en tabla</dd>
@@ -252,6 +256,7 @@
   <script src="merge.js"></script>
   <script src="store.js"></script>
   <script src="sidebar.js"></script>
+  <script src="comments.js"></script>
   <script src="app.js"></script>
   <script src="team-ui.js"></script>
 </body>

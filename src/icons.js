@@ -105,6 +105,11 @@
     elbow: svg('<path d="M4 20v-6a2 2 0 0 1 2-2h12a2 2 0 0 0 2-2V4"/>'),
     lineThick: svg('<path d="M5 19L19 5" stroke-width="4"/>'),
     size: svg('<path d="M4 18L9 6l5 12M5.8 14h6.4M15 18l3-7 3 7M16 16h4"/>'),
+    // Comentarios: el bocadillo tiene la punta abajo a la izquierda, como las chinchetas del lienzo.
+    comment: svg('<path d="M4 20v-9a7 7 0 0 1 7-7h2a7 7 0 0 1 0 14H6z"/><path d="M9 10h6M9 13.5h3.5"/>'),
+    bell: svg('<path d="M6 16v-5a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2.2 2.2 0 0 0 4 0"/>'),
+    send: svg('<path d="M12 19V6M6.5 11.5L12 6l5.5 5.5"/>'),
+    reopen: svg('<path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v5h5"/>'),
   };
 
   // Iconos para nodos: emoji agrupados por categoría con palabras clave para buscar.
