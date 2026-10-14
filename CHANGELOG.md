@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.1 — 2026-10-14
+
+### Fixed
+- Opening Mapache while a version older than 0.4 was still running: `Abrir Mapache.cmd` and `start.sh` now offer to
+  stop the old one and open the new one, and `mapache stop` stops it too. The "install Node.js" hint only appears when
+  Node.js is really missing, and the message comes in your language.
+
 ## 0.5.0 — 2026-10-14
 
 **Mapache for teams.**

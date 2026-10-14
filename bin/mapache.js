@@ -355,4 +355,5 @@ async function main() {
   }
 }
 
-main().catch((e) => { console.error(`Error: ${e.message}`); process.exit(1); });
+// Código 2: hay una versión antigua abierta (los lanzadores lo usan para ofrecer cerrarla).
+main().catch((e) => { console.error(`Error: ${e.message}`); process.exit(e.code === 'OLD_MAPACHE' ? 2 : 1); });

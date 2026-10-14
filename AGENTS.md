@@ -204,7 +204,7 @@ app folder. After updating, an open tab shows *"A new version of Mapache is avai
 |---|---|
 | `node` not found right after installing | Open a new terminal (the PATH is refreshed there) |
 | Port 4321 already in use | `mapache status` tells whether it is Mapache. Otherwise use another `PORT` |
-| `start` says an older version of Mapache is still running | Mapache 0.3 or older is still open (on Windows, a minimized "Mapache (servidor)" window). Ask the person to close it, or stop that process with their permission, then run `start` again |
+| `start` says an older version of Mapache is still running | Mapache 0.3 or older is still running. Ask the person, then run `node MAPACHE/bin/mapache.js stop` (it stops the old version too) and `start` again. `Abrir Mapache.cmd` and `start.sh` offer to do it |
 | The page looks outdated | Reload with Ctrl+F5 (Cmd+Shift+R on macOS) |
 | The app says it is not connected (orange "Saved") | Mapache is not running: `node MAPACHE/bin/mapache.js start`. Changes made meanwhile are kept in the browser and sync when it is back |
 | The agent does not see the Mapache tools | Restart the agent app or open a new session; check the config with `mcp-config`; make sure the paths are absolute |
