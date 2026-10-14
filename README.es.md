@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/banner.png" alt="Mapache: mapas mentales y pizarra en tu ordenador" width="100%">
+  <img src="docs/banner.png" alt="Mapache: mapas mentales y pizarra en la que tu agente de IA puede dibujar. Código abierto, MCP incluido, sin conexión, equipos y cursores en directo" width="100%">
 </p>
 
 <h3 align="center">Mapas mentales y pizarra infinita en tu ordenador, y tu agente de IA también puede dibujar en ella.<br>Código abierto. Funciona sin conexión. Sin cuentas.</h3>
@@ -7,7 +7,7 @@
 <p align="center">
   <a href="#-empezar"><b>Empezar</b></a> ·
   <a href="#-tu-agente-de-ia-tambi%C3%A9n-puede-usarlo">Agentes de IA (MCP)</a> ·
-  <a href="#-para-equipos">Equipos</a> ·
+  <a href="#-para-equipos-beta">Equipos</a> ·
   <a href="#-funciones">Funciones</a> ·
   <a href="#gu%C3%ADa-de-uso">Guía de uso</a> ·
   <a href="#%EF%B8%8F-hoja-de-ruta">Hoja de ruta</a> ·
@@ -15,6 +15,7 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/Hackeatutiempo/mapache/actions/workflows/test.yml"><img alt="Tests" src="https://github.com/Hackeatutiempo/mapache/actions/workflows/test.yml/badge.svg"></a>
   <a href="LICENSE"><img alt="Licencia: AGPL-3.0" src="https://img.shields.io/badge/licencia-AGPL--3.0-8b5cf6"></a>
   <a href="#-tu-agente-de-ia-tambi%C3%A9n-puede-usarlo"><img alt="Servidor MCP incluido" src="https://img.shields.io/badge/MCP-incluido-a78bfa"></a>
   <img alt="Cero dependencias" src="https://img.shields.io/badge/dependencias-0-22c55e">
@@ -124,7 +125,7 @@ conéctalo tú (cambia la ruta por donde instalaste Mapache; `node bin/mapache.j
 Las herramientas que recibe el agente y la línea de comandos están explicadas en el [README en inglés](README.md#-your-ai-agent-can-use-it-too)
 y en `node bin/mapache.js help`.
 
-## 👥 Para equipos
+## 👥 Para equipos (beta)
 
 Monta un Mapache para todo tu equipo en vuestro propio servidor: **cuentas con email y contraseña, enlaces de
 invitación, roles (admin, puede editar, solo ver), cursores en directo y quién está en cada tablero**, y cada cambio en
@@ -138,6 +139,7 @@ docker compose up -d          # abre http://<servidor>:4321 y usa el código que
 ```
 
 Con dominio, `docker compose --profile https up -d` añade HTTPS automático. Todo está en [TEAM.md](TEAM.md) (en inglés).
+El modo equipo es nuevo: pruébalo con tu equipo y [cuéntanos](https://github.com/Hackeatutiempo/mapache/issues) qué falla.
 
 ## ✨ Funciones
 

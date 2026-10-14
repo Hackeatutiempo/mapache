@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/banner.png" alt="Mapache: mind maps and whiteboard on your computer" width="100%">
+  <img src="docs/banner.png" alt="Mapache: mind maps and whiteboard your AI agent can draw on. Open source, MCP built in, works offline, teams and live cursors" width="100%">
 </p>
 
 <h3 align="center">Mind maps and an infinite whiteboard on your computer, and your AI agent can draw on it too.<br>Open source. Works offline. No account.</h3>
@@ -7,7 +7,7 @@
 <p align="center">
   <a href="#-quick-start"><b>Quick start</b></a> ·
   <a href="#-your-ai-agent-can-use-it-too">AI agents (MCP)</a> ·
-  <a href="#-for-teams">Teams</a> ·
+  <a href="#-for-teams-beta">Teams</a> ·
   <a href="#-features">Features</a> ·
   <a href="#%EF%B8%8F-keyboard-first">Shortcuts</a> ·
   <a href="#%EF%B8%8F-roadmap">Roadmap</a> ·
@@ -15,6 +15,7 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/Hackeatutiempo/mapache/actions/workflows/test.yml"><img alt="Tests" src="https://github.com/Hackeatutiempo/mapache/actions/workflows/test.yml/badge.svg"></a>
   <a href="LICENSE"><img alt="License: AGPL-3.0" src="https://img.shields.io/badge/license-AGPL--3.0-8b5cf6"></a>
   <a href="#-your-ai-agent-can-use-it-too"><img alt="MCP server included" src="https://img.shields.io/badge/MCP-built%20in-a78bfa"></a>
   <img alt="Zero dependencies" src="https://img.shields.io/badge/dependencies-0-22c55e">
@@ -161,7 +162,7 @@ Run `npm link` inside the folder once to get a global `mapache` command.
 
 </details>
 
-## 👥 For teams
+## 👥 For teams (beta)
 
 Run one Mapache for your whole team on your own server: **accounts with email and password, invitation links, roles
 (admin, can edit, can view), live cursors and avatars of who is on each board**, and every change on everyone's
@@ -175,6 +176,7 @@ docker compose up -d          # then open http://<server>:4321 and use the setup
 ```
 
 With a domain, `docker compose --profile https up -d` adds automatic HTTPS. Everything is in [TEAM.md](TEAM.md).
+Team mode is new: try it with your team and [tell us](https://github.com/Hackeatutiempo/mapache/issues) what breaks.
 
 ## ✨ Features
 

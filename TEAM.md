@@ -1,4 +1,8 @@
-# Mapache for teams
+# Mapache for teams (beta)
+
+> Team mode is new. It is tested (see the [CI](https://github.com/Hackeatutiempo/mapache/actions/workflows/test.yml)),
+> but nobody has run it with a real team for long yet. Keep backups, and please
+> [open an issue](https://github.com/Hackeatutiempo/mapache/issues) with anything that breaks.
 
 Run one Mapache for your whole team on your own server: accounts with email and password, invitation links,
 roles, everyone's changes live on screen with names and cursors, comments, and AI agents that work with each
