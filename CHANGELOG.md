@@ -22,6 +22,12 @@
 - Desktop shortcut with the Mapache icon, start at login, and launchers that run Mapache in the background.
 - `CHANGELOG.md`, agent demo GIFs, and AGENTS.md sections on connecting and using Mapache as an agent.
 
+### Upgrading from 0.3
+- Close the old server first (on Windows, the minimized "Mapache (servidor)" window), then open Mapache again.
+  `mapache start` tells you if the old one is still running.
+- Open the app once in the browser you used before: your boards are copied from the browser to `~/.mapache`
+  automatically and stay in the browser too.
+
 ### Changed
 - `Abrir Mapache.cmd` and `start.sh` start Mapache in the background without leaving a window open.
 - The local API only answers requests for `localhost` coming from the app itself.

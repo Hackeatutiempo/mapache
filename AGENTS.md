@@ -166,7 +166,9 @@ cd ~/Mapache && git pull
 node bin/mapache.js stop && node bin/mapache.js start
 ```
 
-(or download the zip again and replace the folder). Boards are not affected: they live in `~/.mapache`, outside the
+(or download the zip again and replace the folder). Updating from 0.3 or older: the old server has to be closed first
+(see *Troubleshooting*); the first time the app opens afterwards, the boards that lived only in the browser are copied
+to files by themselves. Boards are not affected: they live in `~/.mapache`, outside the
 app folder. After updating, an open tab shows *"A new version of Mapache is available"* with a reload button.
 
 ## Troubleshooting
@@ -175,6 +177,7 @@ app folder. After updating, an open tab shows *"A new version of Mapache is avai
 |---|---|
 | `node` not found right after installing | Open a new terminal (the PATH is refreshed there) |
 | Port 4321 already in use | `mapache status` tells whether it is Mapache. Otherwise use another `PORT` |
+| `start` says an older version of Mapache is still running | Mapache 0.3 or older is still open (on Windows, a minimized "Mapache (servidor)" window). Ask the person to close it, or stop that process with their permission, then run `start` again |
 | The page looks outdated | Reload with Ctrl+F5 (Cmd+Shift+R on macOS) |
 | The app says it is not connected (orange "Saved") | Mapache is not running: `node MAPACHE/bin/mapache.js start`. Changes made meanwhile are kept in the browser and sync when it is back |
 | The agent does not see the Mapache tools | Restart the agent app or open a new session; check the config with `mcp-config`; make sure the paths are absolute |
