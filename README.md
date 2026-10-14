@@ -96,6 +96,8 @@ Connect it once and ask things like:
 > *"Draw the onboarding flow as a flowchart with a decision for paid and free users."*<br>
 > *"Put these sales numbers in a table on my Q4 board and add a column chart."*
 
+<p align="center"><img src="docs/agent-demo.gif" width="860" alt="An AI agent builds a product launch board in Mapache: a mind map, sticky notes and a signup flowchart appear live"></p>
+
 If Mapache is open in your browser, the changes appear **live**, and **Ctrl+Z** undoes them. Everything runs on your
 computer: the MCP server reads and writes the same files the app uses.
 

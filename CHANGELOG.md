@@ -1,0 +1,34 @@
+# Changelog
+
+## 0.4.0 — 2026-10-14
+
+**Your AI agent can now work on your boards, and the app speaks English.**
+
+### Added
+- **MCP server** (`node bin/mapache.js mcp`, or Streamable HTTP on `http://localhost:4321/mcp`) with 17 tools: list,
+  read and search boards; create, rename, move and delete boards and folders; grow and edit mind maps from indented
+  outlines; add and edit sticky notes, text, shapes, sections, stickers, tables, charts and video embeds; draw
+  connectors; open a board in the browser. Tested with Codex; works with any MCP client (Claude Code, Claude
+  Desktop, Cursor, VS Code, Gemini CLI…).
+- **Command line** (`bin/mapache.js`): the same tools from a terminal (`mapache tool <name> <json>`) plus `list`,
+  `show`, `search`, `new`, `add`, `note`, `connect`, `trash`, `restore`, `start`, `stop`, `status`, `open`,
+  `shortcut`, `autostart` and `mcp-config` (prints the exact setup for each agent).
+- **Connect your AI agent** panel in the app: a ready prompt for your agent and the exact command for each one.
+- **English interface**, chosen from the browser language, with a language button next to the theme button.
+- **Boards as files** in `~/.mapache` (or `MAPACHE_DATA`), with revisions and a trash. The browser keeps an offline
+  copy and syncs in the background; boards from older versions are uploaded automatically the first time.
+- **Live sync**: changes from your agent, another tab or another browser appear immediately in the open board and
+  can be undone with Ctrl+Z. Simultaneous edits are merged per node, item and field.
+- Desktop shortcut with the Mapache icon, start at login, and launchers that run Mapache in the background.
+- `CHANGELOG.md`, agent demo GIFs, and AGENTS.md sections on connecting and using Mapache as an agent.
+
+### Changed
+- `Abrir Mapache.cmd` and `start.sh` start Mapache in the background without leaving a window open.
+- The local API only answers requests for `localhost` coming from the app itself.
+
+## 0.3.0 — 2026-10-14
+
+First public release: mind maps (several per board), sticky notes, text, 12 shapes, sections, connectors with
+automatic routing, freehand drawing with shape recognition, tables and 17 chart types, images and videos,
+multi-selection with alignment, arrange and lock, alignment guides, right-click menu, folders with colors and icons,
+light and dark themes, PNG export and JSON backups.

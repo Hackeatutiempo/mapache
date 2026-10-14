@@ -95,6 +95,8 @@ comandos**. Conéctalo una vez y pide cosas como:
 > *«Dibuja el proceso de alta como diagrama de flujo, con una decisión para usuarios de pago y gratis.»*<br>
 > *«Pon estas cifras de ventas en una tabla de mi tablero del T4 y añade un gráfico de columnas.»*
 
+<p align="center"><img src="docs/agent-demo-es.gif" width="860" alt="Un agente de IA crea en Mapache un tablero de lanzamiento: un mapa mental, notas y un diagrama de alta aparecen en directo"></p>
+
 Si tienes Mapache abierto en el navegador, los cambios aparecen **en directo** y **Ctrl+Z** los deshace. Todo pasa en tu
 ordenador: el servidor MCP lee y escribe los mismos archivos que usa la app.
 

@@ -167,7 +167,7 @@ node bin/mapache.js stop && node bin/mapache.js start
 ```
 
 (or download the zip again and replace the folder). Boards are not affected: they live in `~/.mapache`, outside the
-app folder. After updating, an open tab shows *"There is a new version"* with a reload button.
+app folder. After updating, an open tab shows *"A new version of Mapache is available"* with a reload button.
 
 ## Troubleshooting
 
