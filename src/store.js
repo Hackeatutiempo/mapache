@@ -6,7 +6,11 @@
   'use strict';
   const Merge = root.MMMerge;
   // Nombre de la base de datos y prefijo 'mindmap:' de las preferencias: se mantienen para no perder los datos ya guardados.
-  const DB = 'mindmap';
+  // En modo equipo cada persona tiene su propia copia local (y se borra al cerrar sesión).
+  let DB = 'mindmap';
+  const TEAM_KEY = 'mapache:team-user';
+  const remember = (u) => { try { if (u) localStorage.setItem(TEAM_KEY, JSON.stringify(u)); else localStorage.removeItem(TEAM_KEY); } catch { /* sin almacenamiento */ } };
+  const remembered = () => { try { return JSON.parse(localStorage.getItem(TEAM_KEY) || 'null'); } catch { return null; } };
   let dbp;
 
   function open() {
@@ -73,7 +77,11 @@
       if (isBlob) opts.body = body;
       else { opts.body = JSON.stringify(body); opts.headers['Content-Type'] = 'application/json'; }
     }
-    try { return await fetch(url, opts); } catch (err) { setMode('offline'); throw err; }
+    let res;
+    try { res = await fetch(url, opts); } catch (err) { setMode('offline'); throw err; }
+    // En modo equipo, una sesión caducada (o cerrada en otro sitio) vuelve a la pantalla de acceso.
+    if (res.status === 401 && team) { setMode('auth'); emit({ type: 'auth' }); }
+    return res;
   }
 
   async function markDirty(id) {
@@ -222,10 +230,15 @@
     if (es || typeof EventSource === 'undefined') return;
     es = new EventSource('api/events');
     es.addEventListener('hello', (e) => {
-      try { info = { ...info, ...JSON.parse(e.data) }; } catch { /* sin datos */ }
+      try { const d = JSON.parse(e.data); cid = d.cid || null; info = { ...info, ...d }; } catch { /* sin datos */ }
       setMode('online');
       fullSync();
     });
+    // Modo equipo: quién está conectado, sus cursores y cambios en el equipo.
+    es.addEventListener('presence', (e) => { people = JSON.parse(e.data).people || []; emit({ type: 'presence', people }); });
+    es.addEventListener('cursor', (e) => emit({ type: 'cursor', ...JSON.parse(e.data) }));
+    es.addEventListener('team', () => loadMembers().then(() => emit({ type: 'team' })));
+    es.addEventListener('signout', () => { es.close(); es = null; setMode('auth'); emit({ type: 'auth' }); });
     es.addEventListener('board', (e) => {
       const d = JSON.parse(e.data);
       if (d.deleted) serial(`b:${d.id}`, () => dropLocal(d.id));
@@ -249,9 +262,22 @@
         const data = res.ok && /json/.test(res.headers.get('content-type') || '') ? await res.json() : null;
         if (!data || data.app !== 'mapache') return mode; // web estática: solo este navegador
         info = data;
+        if (data.mode === 'team') {
+          team = true;
+          if (!data.user) { mode = 'auth'; return mode; }
+          user = data.user;
+          DB = `mapache-team-${user.id}`;
+          remember({ id: user.id, name: user.name, color: user.color, role: user.role });
+          await loadMembers();
+        }
         setMode('online');
         await fullSync();
-      } catch { setMode('offline'); }
+      } catch {
+        // Sin conexión con un servidor de equipo: se sigue con la copia local de la última persona que entró.
+        const u = remembered();
+        if (u) { team = true; user = u; DB = `mapache-team-${u.id}`; }
+        setMode('offline');
+      }
       listen();
       return mode;
     })();
@@ -261,7 +287,43 @@
   let openId = null;
   function reportOpen(id) {
     openId = id;
-    if (mode === 'online') call('PUT', 'api/session', { openBoard: id }).catch(() => {});
+    if (mode === 'online') call('PUT', 'api/session', { openBoard: id, cid }).catch(() => {});
+  }
+
+  // ---------- Modo equipo ----------
+  let team = false;
+  let user = null;
+  let cid = null;
+  let people = [];
+  let members = [];
+  async function loadMembers() {
+    try { const r = await fetch('api/team', { cache: 'no-store' }); if (r.ok) members = (await r.json()).users || []; } catch { /* sin conexión */ }
+  }
+  let cursorTimer = null, cursorNext = null;
+  // Tu cursor, como mucho unas 15 veces por segundo.
+  function sendCursor(board, x, y) {
+    if (!team || mode !== 'online' || !cid) return;
+    cursorNext = { cid, board, x, y };
+    if (cursorTimer) return;
+    cursorTimer = setTimeout(() => {
+      cursorTimer = null;
+      fetch('api/cursor', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cursorNext) }).catch(() => {});
+    }, 66);
+  }
+  // Petición JSON a la API (para el equipo): devuelve el JSON o lanza un error con el mensaje del servidor.
+  async function api(method, url, body) {
+    const res = await fetch(url, { method, cache: 'no-store', headers: body === undefined ? {} : { 'Content-Type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body) });
+    const data = await res.json().catch(() => ({}));
+    if (res.status === 401 && team && !/api\/auth\//.test(url)) { setMode('auth'); emit({ type: 'auth' }); }
+    if (!res.ok) throw Object.assign(new Error(data.error || `Error ${res.status}`), { status: res.status });
+    return data;
+  }
+  async function logout() {
+    try { await api('POST', 'api/auth/logout', {}); } catch { /* ya no había sesión */ }
+    remember(null);
+    try { if (dbp) (await dbp).close(); } catch { /* nada */ }
+    await new Promise((ok) => { const r = indexedDB.deleteDatabase(DB); r.onsuccess = r.onerror = r.onblocked = () => ok(); });
+    location.reload();
   }
 
   // ---------- Lo que usa la app ----------
@@ -330,8 +392,13 @@
     persist: () => (navigator.storage && navigator.storage.persist ? navigator.storage.persist() : Promise.resolve(false)),
     ready,
     on: (fn) => { listeners.add(fn); return () => listeners.delete(fn); },
-    status: () => ({ mode, dataDir: info && info.dataDir, version: info && info.version }),
+    status: () => ({ mode, dataDir: info && info.dataDir, version: info && info.version, team, user, role: user ? user.role : null, url: info && info.url, needsSetup: !!(info && info.needsSetup), cid }),
     reportOpen,
+    members: () => members,
+    people: () => people,
+    cursor: sendCursor,
+    api,
+    logout,
   };
 
   root.MMStore = Store;

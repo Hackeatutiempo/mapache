@@ -192,8 +192,11 @@
 
   const snapshot = () => JSON.stringify(doc);
 
+  // Rol de solo lectura (modo equipo): se puede mirar, mover la vista y exportar, pero no cambiar nada.
+  const readOnly = () => Store.status().role === 'viewer';
   function commit(before) {
     if (before === snapshot()) return;
+    if (readOnly()) { doc = JSON.parse(before); render(); toast(t('Solo puedes ver este tablero')); return; }
     history.past.push(before);
     if (history.past.length > 200) history.past.shift();
     history.future = [];
@@ -240,7 +243,7 @@
   async function saveNow() {
     clearTimeout(saveTimer);
     saveTimer = null;
-    if (!map) return;
+    if (!map || readOnly()) return;
     map.doc = doc;
     map.updatedAt = Date.now();
     try {
@@ -314,6 +317,7 @@
       if (await Store.get(e.id)) { if (!map || map.id !== e.id) await openMap(e.id); window.focus(); }
     } else if (e.type === 'status') updateSaveTip();
     else if (e.type === 'export') exportForAgent(e);
+    else if (e.type === 'auth' && window.MMTeamUI) window.MMTeamUI.showAuth({ expired: true });
   });
 
   // Tu agente pidió exportar un tablero: se abre (si no lo estaba), se dibuja y se devuelve el archivo.
@@ -354,6 +358,7 @@
   }
 
   function addChild(pid = selectedId, side = null) {
+    if (readOnly()) return toast(t('Solo puedes ver este tablero'));
     if (!pid) return;
     if (editing) commitEdit();
     const before = snapshot();
@@ -371,6 +376,7 @@
   }
 
   function addSibling(id = selectedId, above = false) {
+    if (readOnly()) return toast(t('Solo puedes ver este tablero'));
     if (!id) return;
     if (isRoot(id)) return addChild(id);
     if (editing) commitEdit();
@@ -386,6 +392,7 @@
   }
 
   function addParent(id = selectedId) {
+    if (readOnly()) return toast(t('Solo puedes ver este tablero'));
     if (!id || isRoot(id)) return;
     if (editing) commitEdit();
     const before = snapshot();
@@ -544,6 +551,7 @@
 
   // Mapa mental nuevo en el tablero (herramienta M): una raíz más, centrada donde se pulsa.
   function createMindmap(at) {
+    if (readOnly()) return toast(t('Solo puedes ver este tablero'));
     if (editing) commitEdit();
     const before = snapshot();
     const id = uid();
@@ -966,6 +974,7 @@
     while (gs < 11) gs *= 2;
     stage.style.backgroundSize = `${gs}px ${gs}px`;
     stage.style.backgroundPosition = `${view.x - gs / 2}px ${view.y - gs / 2}px`;
+    window.dispatchEvent(new Event('mapache:view'));
     positionContextbar();
   }
 
@@ -1970,6 +1979,7 @@
   const colWidthFor = (rows, c) => Math.max(90, Math.min(260, Math.max(...rows.map((r) => Tables.strip(r[c] || '').length)) * 8 + 28));
 
   function createTableFromRows(rows, at, { escaped = false } = {}) {
+    if (readOnly()) return toast(t('Solo puedes ver este tablero'));
     if (editing) commitEdit();
     const cells = rows.map((r) => r.map((v) => (escaped ? v : esc(v))));
     const before = snapshot();
@@ -1989,6 +1999,7 @@
   }
 
   function createTable(nr, nc, at) {
+    if (readOnly()) return toast(t('Solo puedes ver este tablero'));
     if (editing) commitEdit();
     const before = snapshot();
     const id = uid();
@@ -2059,6 +2070,7 @@
   }
 
   function startCellEdit(id, r, c, { selectAll = false, replace = null, point = null, before = snapshot() } = {}) {
+    if (readOnly()) return;
     if (doc.items[id]?.locked) return;
     if (editing) commitEdit();
     selItem = id;
@@ -2142,6 +2154,7 @@
   const topZ = () => Object.values(doc.items).reduce((m, it) => Math.max(m, it.z || 0), 0) + 1;
 
   function createItem(type, at, extra = {}) {
+    if (readOnly()) return toast(t('Solo puedes ver este tablero'));
     if (editing) commitEdit();
     const before = snapshot();
     const id = uid();
@@ -2215,6 +2228,7 @@
   }
 
   function startItemEdit(id, { before = snapshot(), point = null } = {}) {
+    if (readOnly()) return;
     const it = doc.items[id];
     if (!it || !it.lines || it.locked) return;
     if (editing) commitEdit();
@@ -2452,6 +2466,7 @@
   }
 
   function startEdit(id, { before = snapshot(), point = null } = {}) {
+    if (readOnly()) return;
     if (editing && !(editing.kind === 'node' && editing.id === id)) commitEdit();
     selectedId = id;
     selItem = null;
@@ -4213,6 +4228,10 @@
     if (e.key === 'Escape' && !ctx.hidden) { e.preventDefault(); closeCtx(); return; }
     if (e.key === 'Escape' && !pop.hidden) { e.preventDefault(); closePopover(); return; }
     if (inField) return;
+    if (readOnly() && !editing && !(e.key === 'Escape' || e.key === '?' || e.key === ' ' || /^[01+=-]$/.test(e.key) || ((e.ctrlKey || e.metaKey) && /^[cfa]$/i.test(e.key)))) {
+      if (e.key.length === 1 || ['Tab', 'Enter', 'Delete', 'Backspace'].includes(e.key)) e.preventDefault();
+      return;
+    }
     if (editing) return onEditorKey(e);
     if (tool === 'draw' && !(e.ctrlKey || e.metaKey)) {
       const map = { KeyH: e.shiftKey ? 'highlighter' : 'pen', KeyE: 'eraser', KeyS: 'lasso' };
@@ -4827,6 +4846,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: ${THEME_COLO
     if (!agentBox.hidden) await fillAgent();
   }
   async function fillAgent() {
+    if (Store.status().team && window.MMTeamUI) return window.MMTeamUI.fillAgent(agentBox);
     let info = null;
     try { const r = await fetch('api/info', { cache: 'no-store' }); if (r.ok) info = await r.json(); } catch { /* sin servidor */ }
     const q = (s) => (/[\s"]/.test(s) ? `"${s}"` : s);
@@ -4933,6 +4953,9 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: ${THEME_COLO
     Store.persist();
     setTool('select');
     await Store.ready();
+    if (Store.status().mode === 'auth') return window.MMTeamUI && window.MMTeamUI.showAuth();
+    document.body.classList.toggle('readonly', readOnly());
+    if (window.MMTeamUI) window.MMTeamUI.init();
     updateSaveTip();
     const all = await Store.all();
     if (!all.length) return createMap(null);
@@ -4965,6 +4988,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: ${THEME_COLO
     get doc() { return doc; }, get layout() { return layout; }, get selectedId() { return selectedId; },
     get selItem() { return selItem; }, get multi() { return [...multi, ...[...multiRoots].map(mapTok), ...[...multiNodes].map(nodeTok)]; }, get editing() { return editing; }, get tool() { return tool; },
     selectNode, selectItem, addChild, addSibling, openMap, createMap, act, buildImage, createItem, addImages, exportImage,
+    get view() { return view; }, get mapId() { return map ? map.id : null; }, toWorld, toast, uiConfirm, uiAlert,
   };
 
   document.fonts.ready.then(start);

@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.5.0 — 2026-10-14
+
+**Mapache for teams.**
+
+### Added
+- **Team server** (`MAPACHE_MODE=team`, Docker image and `docker-compose.yml` with optional automatic HTTPS):
+  accounts with email and password, invitation links, roles (admin, can edit, can view), a one-time setup code for
+  the first admin, profile and password changes, and `mapache team …` commands for the server's terminal.
+- **Real-time collaboration**: avatars of who is on the board, live cursors with names, and everyone's changes on
+  screen as they happen (merged when simultaneous).
+- **Agents per person**: personal tokens and HTTP MCP (`/mcp` with `Authorization: Bearer`), with the person's role.
+- [TEAM.md](TEAM.md): install, HTTPS, people, agents, backups, updates and security notes.
+
 ## 0.4.1 — 2026-10-14
 
 **Share a board with anyone.**

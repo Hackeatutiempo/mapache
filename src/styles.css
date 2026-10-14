@@ -573,3 +573,78 @@ kbd { font: 600 10.5px var(--ui-font); background: var(--kbd); color: var(--kbd-
 .about-star:hover { filter: brightness(1.08); }
 .about-star svg { width: 16px; height: 16px; fill: #fde68a; stroke: #fde68a; }
 .about-foot { margin: 16px 0 0; font-size: 11.5px; color: var(--muted); }
+
+/* ---------- Modo equipo ---------- */
+#auth { position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; padding: 16px; overflow: auto;
+  background: radial-gradient(circle at 20% 10%, rgb(124 58 237 / 0.18), transparent 50%), var(--bg); }
+.au-card { width: min(400px, 100%); display: grid; gap: 12px; padding: 28px 26px 22px; border-radius: 16px; background: var(--panel);
+  border: 1px solid var(--bar-border); box-shadow: 0 24px 60px rgb(0 0 0 / 0.35); }
+.au-brand { display: flex; align-items: center; gap: 10px; font-size: 17px; margin-bottom: 4px; }
+.au-card h1 { margin: 0; font-size: 21px; }
+.au-sub { margin: -4px 0 4px; color: var(--muted); font-size: 13.5px; line-height: 1.5; }
+.au-field { display: grid; gap: 5px; font-size: 12.5px; color: var(--muted); }
+.au-field input, .tm-invite input, .tm-card select, .tm-person select { font: inherit; font-size: 14px; color: var(--ink); background: var(--panel-2);
+  border: 1px solid var(--line); border-radius: 9px; padding: 9px 11px; outline: none; }
+.au-field input:focus, .tm-invite input:focus { border-color: var(--accent-soft); }
+.au-field input[readonly] { opacity: 0.75; }
+.au-hint { margin: -4px 0 0; font-size: 12px; line-height: 1.45; color: var(--muted); }
+.au-error { margin: 0; padding: 8px 10px; border-radius: 8px; background: rgb(220 38 38 / 0.14); color: #fca5a5; font-size: 13px; }
+:root[data-theme="light"] .au-error { color: #b91c1c; }
+.au-go { padding: 10px 14px; font-size: 14px; margin-top: 4px; }
+.au-go:disabled { opacity: 0.6; cursor: wait; }
+.au-alt { margin: 0; text-align: center; font-size: 13px; }
+.au-alt a { color: var(--accent-ink); }
+.au-role, .tm-role { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11.5px; font-weight: 600; background: var(--sel-bg); color: var(--accent-ink); }
+body.auth-open #main, body.auth-open #sidebar { visibility: hidden; }
+
+.tm-avatar { width: var(--s); height: var(--s); border-radius: 50%; display: inline-grid; place-items: center; flex: none; background: var(--c);
+  color: #111821; font-size: calc(var(--s) * 0.4); font-weight: 700; letter-spacing: 0.02em; box-shadow: 0 0 0 2px var(--panel); }
+#presence { display: flex; align-items: center; margin-left: 10px; }
+#presence .tm-avatar { margin-left: -6px; }
+#presence .tm-avatar:first-child { margin-left: 0; }
+.tm-more { margin-left: 6px; font-size: 12px; color: var(--muted); }
+.user-btn { margin-left: 6px; padding: 2px; border-radius: 50%; display: grid; }
+.user-btn:hover .tm-avatar { box-shadow: 0 0 0 2px var(--accent-soft); }
+.tm-menu { position: fixed; z-index: 120; min-width: 240px; padding: 6px; border-radius: 12px; background: var(--panel); border: 1px solid var(--bar-border);
+  box-shadow: 0 12px 36px rgb(0 0 0 / 0.35); display: grid; }
+.tm-menu > button { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; font-size: 13.5px; text-align: left; }
+.tm-menu > button:hover { background: var(--btn-hover); }
+.tm-menu > button svg { width: 16px; height: 16px; color: var(--muted); }
+.tm-me { display: flex; gap: 10px; align-items: center; padding: 8px 10px 10px; }
+.tm-me > div { display: grid; gap: 2px; }
+.tm-me small { color: var(--muted); font-size: 12px; }
+.tm-me .tm-role { justify-self: start; margin-top: 2px; }
+.tm-sep { height: 1px; background: var(--line); margin: 4px 2px; }
+
+#cursors { position: absolute; inset: 0; pointer-events: none; z-index: 30; overflow: hidden; }
+.tm-cursor { position: absolute; left: 0; top: 0; transition: transform 90ms linear; will-change: transform; }
+.tm-cursor span { position: absolute; left: 14px; top: 16px; padding: 2px 7px; border-radius: 6px; color: #111821; font-size: 11.5px; font-weight: 600; white-space: nowrap; }
+
+.tm-card { width: min(560px, calc(100vw - 32px)); position: relative; max-height: 90vh; overflow: auto; display: grid; gap: 10px; }
+.tm-card h2 { margin: 0; }
+.tm-card h3 { margin: 10px 0 0; }
+.tm-tabs { display: flex; gap: 4px; }
+.tm-tabs button { padding: 5px 12px; border-radius: 999px; font-size: 12.5px; color: var(--muted); border: 1px solid var(--line); }
+.tm-tabs button[aria-selected="true"] { color: var(--accent-ink); background: var(--sel-bg); border-color: transparent; }
+.tm-body { display: grid; gap: 10px; }
+.tm-body > .primary, .tm-body > .ghost { justify-self: start; }
+.tm-people { display: grid; gap: 4px; }
+.tm-person { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 10px; border: 1px solid var(--line); }
+.tm-who { flex: 1; display: grid; gap: 1px; min-width: 0; }
+.tm-who b { font-size: 13.5px; }
+.tm-who small { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; }
+.tm-person select { padding: 5px 8px; font-size: 12.5px; }
+.tm-colors { display: flex; gap: 6px; flex-wrap: wrap; }
+.tm-color { width: 24px; height: 24px; border-radius: 50%; background: var(--c); }
+.tm-color.on { box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--c); }
+.tm-invite { display: flex; gap: 6px; flex-wrap: wrap; }
+.tm-invite input { flex: 1; min-width: 160px; }
+.tm-link pre { margin: 0 0 6px; padding: 10px; border-radius: 9px; background: var(--panel-2); border: 1px solid var(--line); font: 12.5px ui-monospace, Consolas, monospace; white-space: pre-wrap; word-break: break-all; }
+.tm-tokens { display: grid; gap: 6px; color: var(--ink); }
+.tm-tokens > b { font-size: 13px; }
+.tm-tokens > button { justify-self: start; }
+.tm-fresh { margin: 0; padding: 8px 10px; border-radius: 8px; background: rgb(250 204 21 / 0.14); color: var(--ink); font-size: 12.5px; }
+
+/* Solo lectura: sin herramientas de edición */
+body.readonly #toolbox, body.readonly #contextbar, body.readonly .qa { display: none !important; }
+@media (max-width: 640px) { #presence { display: none; } }

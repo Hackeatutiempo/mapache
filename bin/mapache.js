@@ -110,6 +110,16 @@ Every tool (the same ones the MCP server offers)
   tool <name> [json|-]         Run one with JSON arguments, e.g.
                                mapache tool add_items '{"board":"open","items":[{"type":"note","text":"Hi"}]}'
 
+Team server (run these on the server, e.g. docker exec -it mapache node bin/mapache.js team …)
+  serve --team                 Run the team server in the foreground (accounts, invites, live cursors)
+  team                         People and pending invitations
+  team admin <email> [--name <n>]   Create an admin account (or make it admin) and print its password
+  team add <email> [--role editor|viewer|admin] [--name <n>]   Create an account and print its password
+  team invite [--role editor|viewer|admin] [--email <e>] [--url <public address>]   Print an invitation link
+  team reset-password <email>  Print a new password for that account
+  team role <email> <role>     Change someone's role
+  team remove <email>          Remove an account
+
 AI agents
   mcp                          Run the MCP server over stdio (this is what you put in your agent's config)
   mcp-config [client]          Show the config for Claude, ChatGPT, Codex, Cursor, VS Code…
@@ -148,6 +158,50 @@ function desktopDir() {
     try { return require('child_process').execFileSync('powershell', ['-NoProfile', '-Command', '[Environment]::GetFolderPath("Desktop")'], { encoding: 'utf8', windowsHide: true }).trim() || path.join(home, 'Desktop'); } catch { return path.join(home, 'Desktop'); }
   }
   return path.join(home, 'Desktop');
+}
+
+// Cuentas del modo equipo desde la terminal (no hace falta que el servidor esté parado).
+function teamCommand(pos, opt) {
+  const Auth = require('../lib/auth');
+  const auth = Auth.open(Store.open().dir);
+  const [sub, email, extra] = pos;
+  const find = (e) => {
+    const u = auth.users().find((x) => x.email === String(e || '').toLowerCase());
+    if (!u) throw new Error(`No account with the email ${e}`);
+    return u;
+  };
+  const show = (u, pw) => `${u.name} <${u.email}> · ${u.role}${pw ? `\nPassword: ${pw}\n(They can change it in Mapache: their name, top right > Profile)` : ''}`;
+  switch (sub) {
+    case undefined: case 'status': case 'list': {
+      const us = auth.users();
+      const inv = auth.invites();
+      return `${us.length} account(s)${us.length ? `:\n${us.map((u) => `- ${show(u)}`).join('\n')}` : '. Create the first admin with: mapache team admin you@example.com'}\n` +
+        `${inv.length} pending invitation(s)${inv.map((i) => `\n- ${i.role}${i.email ? ` for ${i.email}` : ''}, expires ${new Date(i.expiresAt).toISOString().slice(0, 10)}`).join('')}`;
+    }
+    case 'admin': case 'add': {
+      if (!email) throw new Error(`Use: mapache team ${sub} <email>`);
+      const role = sub === 'admin' ? 'admin' : opt.role || 'editor';
+      const pw = typeof opt.password === 'string' ? opt.password : Auth.generatePassword();
+      const exists = auth.users().find((x) => x.email === email.toLowerCase());
+      if (exists) return show(auth.updateUser(exists.id, { role, password: pw }), pw);
+      return show(auth.createUser({ email, name: opt.name, password: pw, role }), pw);
+    }
+    case 'invite': {
+      const t = auth.createInvite({ role: opt.role || 'editor', email: opt.email || null, createdBy: 'cli' });
+      const url = String(opt.url || process.env.PUBLIC_URL || `http://localhost:${Number(process.env.PORT) || 4321}`).replace(/\/+$/, '');
+      return `Invitation (${opt.role || 'editor'}, valid 7 days, one person):\n${url}/#invite=${encodeURIComponent(t)}`;
+    }
+    case 'reset-password': {
+      const u = find(email);
+      const pw = Auth.generatePassword();
+      auth.updateUser(u.id, { password: pw });
+      auth.dropSessions(u.id);
+      return show(u, pw);
+    }
+    case 'role': return show(auth.updateUser(find(email).id, { role: extra }));
+    case 'remove': { const u = find(email); auth.removeUser(u.id); return `Removed ${u.email}`; }
+    default: throw new Error(`Unknown team command "${sub}". Run: mapache help`);
+  }
 }
 
 // Acceso directo en el escritorio para abrir Mapache con doble clic.
@@ -211,7 +265,10 @@ async function main() {
     case 'mcp-config':
       return console.log(mcpConfig(pos[0]));
     case 'serve':
+      if (opt.team) process.env.MAPACHE_MODE = 'team';
       return require('../server.js');
+    case 'team':
+      return console.log(teamCommand(pos, opt));
     case 'start': {
       const info = await Launch.start();
       return console.log(`${info.started ? 'Started' : 'Already running'}: http://localhost:${info.port}\nBoards: ${info.dataDir}`);

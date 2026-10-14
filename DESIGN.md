@@ -159,10 +159,24 @@ named `map:<rootId>`.
 - Agents export through the app: `export_board` asks the server, which sends an `export` event to the most recently
   connected tab; that tab opens the board, builds the file and uploads it to `/api/export/<request>`.
 
-## Planned team server
+## Team mode (`lib/auth.js`, `lib/team.js`, `src/team-ui.js`)
 
-- Accounts with email and password, projects with roles, invite links, shipped as a Docker image.
-- Real-time collaboration with Yjs on top of the same files.
+- `MAPACHE_MODE=team` turns the same server into a multi-user one. Local mode refuses to listen on anything but
+  loopback, so boards are never on a network without accounts.
+- **Accounts** in `users.json` (scrypt `N=16384, r=8, p=1`), **sessions** in `sessions.json` (30 days, cookie
+  `HttpOnly; SameSite=Lax`, `Secure` over HTTPS), **invitations** (7 days, one use, optional email) and **agent
+  tokens** (`mpk_…`); every token is stored only as a SHA-256 hash. The first admin needs a one-time setup code that
+  is printed in the server log.
+- **Authorization**: every `/api` and `/mcp` call needs a session or a bearer token. Cookie requests that change data
+  must carry the app's own `Origin` (CSRF). Roles: admin, editor, viewer; viewers get read-only routes and read-only
+  MCP tools, and the app hides editing tools and reverts any change locally.
+- **Live collaboration** reuses the sync above (revisions, three-way merge, SSE). On top: `presence` events (who is
+  connected and on which board) and `cursor` events (positions in board coordinates, sent at most ~15 times a
+  second, relayed only to people on the same board). Changing someone's role or password closes their live
+  connections (`signout`) so their tabs return to the login screen at once.
+- In the browser each person gets their own IndexedDB (`mapache-team-<userId>`), deleted on log out.
+- **Docker**: `node:22-alpine` plus the source, data in the `/data` volume, runs as `node`, with a health check.
+  `docker-compose.yml` has an optional `https` profile with Caddy.
 
 ## Text, media and guides
 

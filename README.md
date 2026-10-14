@@ -7,6 +7,7 @@
 <p align="center">
   <a href="#-quick-start"><b>Quick start</b></a> ·
   <a href="#-your-ai-agent-can-use-it-too">AI agents (MCP)</a> ·
+  <a href="#-for-teams">Teams</a> ·
   <a href="#-features">Features</a> ·
   <a href="#%EF%B8%8F-keyboard-first">Shortcuts</a> ·
   <a href="#%EF%B8%8F-roadmap">Roadmap</a> ·
@@ -52,6 +53,7 @@ it keeps working on a plane, and **your AI agent can read them and build on them
 | Where your boards live | **Files on your computer** | Their cloud |
 | Works offline | **Yes** | Limited |
 | Your AI agent can read and edit boards | **Yes, locally (MCP)** | Through their cloud, if at all |
+| Team server with accounts and live cursors | **Yes, self-hosted with Docker** | Their cloud, per seat |
 | Open source and self-hostable | **Yes** | No |
 | Dependencies to install | **0** | — |
 
@@ -156,6 +158,19 @@ Run `npm link` inside the folder once to get a global `mapache` command.
 
 </details>
 
+## 👥 For teams
+
+Run one Mapache for your whole team on your own server: **accounts with email and password, invitation links, roles
+(admin, can edit, can view), live cursors and avatars of who is on each board**, and every change on everyone's
+screen as it happens. Each person can connect their own AI agent with a personal token.
+
+```bash
+git clone https://github.com/Hackeatutiempo/mapache.git && cd mapache
+docker compose up -d          # then open http://<server>:4321 and use the setup code from: docker logs mapache
+```
+
+With a domain, `docker compose --profile https up -d` adds automatic HTTPS. Everything is in [TEAM.md](TEAM.md).
+
 ## ✨ Features
 
 ### Mind maps that grow as fast as you think
@@ -203,6 +218,7 @@ nothing to install. Or as PDF, PNG or SVG. Your agent can do it too ("save this 
 | **Folders** | Nested folders and maps in the sidebar, drag to reorganize, a color and an icon for each |
 | **AI agents** | MCP server and command line with 18 tools; changes from your agent appear live and can be undone |
 | **Sync** | Boards are files on your computer; every open tab and browser stays in sync, edits made offline sync later, and simultaneous changes are merged |
+| **Teams** | Self-hosted team server (Docker): accounts, invitation links, roles, live cursors and presence, personal agent tokens |
 | **Languages** | English and Spanish, following your browser (switch any time) |
 | **Themes** | Dark, light or follow the system |
 | **Share and export** | A single-file web page anyone can open in a browser (zoom and pan, no install), PDF, PNG, SVG, and a JSON backup of all maps, folders and videos |
@@ -229,8 +245,8 @@ nothing to install. Or as PDF, PNG or SVG. Your agent can do it too ("save this 
 - [x] Boards as local files, live sync between tabs and browsers
 - [x] MCP server and command line so AI agents can read and edit boards
 - [x] Share a board as a single HTML page, PDF, PNG or SVG
-- [ ] Self-hosted team server with Docker: accounts, projects and invite links
-- [ ] Real-time collaboration (CRDT, keeps working offline)
+- [x] Self-hosted team server with Docker: accounts, roles and invitation links
+- [x] Real-time collaboration: live changes, cursors and presence, merged edits, keeps working offline
 - [ ] Comments and mentions
 
 Have an idea? [Open an issue](https://github.com/Hackeatutiempo/mapache/issues).
@@ -240,7 +256,8 @@ Have an idea? [Open an issue](https://github.com/Hackeatutiempo/mapache/issues).
 There is no account, no analytics and no server you do not run yourself. Boards live as JSON files in `~/.mapache`
 on your computer, with a copy in your browser so the app works offline. The local server only listens on your own
 computer and refuses requests from other websites. The MCP server runs on your computer too; your agent's provider
-sees what the agent reads, as with any other tool you give it.
+sees what the agent reads, as with any other tool you give it. In team mode the boards live on your own server, behind
+accounts (see [TEAM.md](TEAM.md#security-notes)).
 
 <details>
 <summary><b>How it is built</b></summary>
@@ -266,6 +283,8 @@ Plain JavaScript, no framework and no build step: the browser runs exactly the c
 | `lib/store.js` | Boards as files, with revisions and a trash |
 | `lib/board.js` | Board editing for agents: outlines, Markdown, placement |
 | `lib/tools.js` · `lib/mcp.js` | The agent tools and the MCP server |
+| `lib/auth.js` · `lib/team.js` · `src/team-ui.js` | Team mode: accounts, invitations, roles, presence and cursors |
+| `Dockerfile` · `docker-compose.yml` · `Caddyfile` | Team server image, with optional automatic HTTPS |
 | `bin/mapache.js` | Command line |
 
 Design decisions and measurements are in [DESIGN.md](DESIGN.md). Run the tests with `npm test`.

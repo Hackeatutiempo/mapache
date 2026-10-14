@@ -1,0 +1,45 @@
+# Mapache para tu equipo. Ver TEAM.md.
+#
+#   docker compose up -d                       En tu red: http://IP-del-servidor:4321
+#   docker compose --profile https up -d       Con dominio y HTTPS automático (Caddy): pon DOMAIN en .env
+#
+# Variables (en un archivo .env junto a este, o en el entorno):
+#   PUBLIC_URL   Dirección con la que entra la gente (para los enlaces de invitación). Ej.: https://mapache.tuempresa.com
+#   DOMAIN       Solo con --profile https: el dominio que apunta a este servidor (Caddy saca el certificado solo)
+#   MAPACHE_ADMIN_EMAIL / MAPACHE_ADMIN_PASSWORD   Opcional: crea la cuenta de admin al arrancar la primera vez
+
+services:
+  mapache:
+    build: .
+    image: mapache:latest
+    container_name: mapache
+    restart: unless-stopped
+    ports:
+      - "${MAPACHE_PORT:-4321}:4321"
+    environment:
+      MAPACHE_MODE: team
+      PUBLIC_URL: ${PUBLIC_URL:-}
+      TRUST_PROXY: ${TRUST_PROXY:-0}
+      MAPACHE_ADMIN_EMAIL: ${MAPACHE_ADMIN_EMAIL:-}
+      MAPACHE_ADMIN_PASSWORD: ${MAPACHE_ADMIN_PASSWORD:-}
+    volumes:
+      - mapache-data:/data
+
+  caddy:
+    image: caddy:2
+    profiles: ["https"]
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN:-localhost}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+    depends_on:
+      - mapache
+
+volumes:
+  mapache-data:
+  caddy-data:

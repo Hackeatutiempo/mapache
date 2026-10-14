@@ -32,14 +32,17 @@
       <span id="breadcrumb"></span>
       <input id="map-title" spellcheck="false" aria-label="Nombre del mapa" />
       <span id="save-state"></span>
+      <div id="presence"></div>
       <div class="top-actions">
         <button id="theme-btn" class="icon-btn" data-tip="Tema claro u oscuro"></button>
         <button id="lang-btn" class="icon-btn" data-tip="Idioma"></button>
         <button id="export-png" class="icon-btn" data-tip="Exportar o compartir"></button>
       </div>
+      <button id="user-btn" class="user-btn" hidden></button>
     </header>
 
     <div id="stage">
+      <div id="cursors"></div>
       <div id="sections-layer" class="world-layer"></div>
       <div id="items-back" class="world-layer"></div>
       <svg id="lines-layer" class="layer"><g id="lines"></g></svg>
@@ -114,6 +117,9 @@
       <div class="modal-foot"><button class="ghost" data-dlg="cancel">Cancelar</button><button class="primary" data-dlg="ok">Aceptar</button></div>
     </div>
   </div>
+  <div id="auth" hidden></div>
+  <div id="team-modal" class="modal" hidden></div>
+
   <div id="agent" class="modal" hidden>
     <div class="modal-card agent-card" role="dialog" aria-modal="true" aria-labelledby="agent-title">
       <button class="icon-btn about-close" data-cmd="agent" aria-label="Cerrar" data-icon="close"></button>
@@ -247,5 +253,6 @@
   <script src="store.js"></script>
   <script src="sidebar.js"></script>
   <script src="app.js"></script>
+  <script src="team-ui.js"></script>
 </body>
 </html>

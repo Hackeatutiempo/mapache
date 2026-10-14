@@ -1,26 +1,41 @@
-// Servidor local de Mapache (sin dependencias). Uso: node server.js  (o npm start)
+// Servidor de Mapache (sin dependencias). Uso: node server.js  (o npm start)
 // Sirve la app, guarda los tableros como archivos (ver lib/store.js), avisa al navegador en directo cuando cambian
-// (también si los cambia tu agente de IA) y ofrece el MCP por HTTP en /mcp. Solo escucha en este ordenador.
+// (también si los cambia tu agente de IA) y ofrece el MCP por HTTP en /mcp.
+// - Modo local (por defecto): solo escucha en este ordenador, sin cuentas.
+// - Modo equipo (MAPACHE_MODE=team): cuentas con email y contraseña, invitaciones, roles, presencia y cursores en
+//   directo. Pensado para Docker o un servidor propio (ver TEAM.md).
 // SPDX-License-Identifier: AGPL-3.0-or-later
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const Store = require('./lib/store');
 const MCP = require('./lib/mcp');
 const Launch = require('./lib/launch');
 const { version } = require('./package.json');
 
 const PORT = Number(process.env.PORT) || 4321;
+const TEAM = process.env.MAPACHE_MODE === 'team' || process.argv.includes('--team');
+const HOST = process.env.HOST || (TEAM ? '0.0.0.0' : '127.0.0.1');
+const PUBLIC_URL = String(process.env.PUBLIC_URL || '').replace(/\/+$/, '');
+const TRUST_PROXY = process.env.TRUST_PROXY === '1' || process.env.TRUST_PROXY === 'true';
 const REPO = 'Hackeatutiempo/mapache';
 const ES = /^es/i.test(Intl.DateTimeFormat().resolvedOptions().locale || '');
 const say = (es, en) => (ES ? es : en);
+
+// Sin cuentas, los tableros solo pueden estar al alcance de este ordenador.
+if (!TEAM && !/^(127\.0\.0\.1|localhost|::1)$/.test(HOST)) {
+  console.error(say('En modo local Mapache solo escucha en este ordenador. Para usarlo en red, arráncalo en modo equipo (MAPACHE_MODE=team): ver TEAM.md.',
+    'In local mode Mapache only listens on this computer. To use it over a network, start it in team mode (MAPACHE_MODE=team): see TEAM.md.'));
+  process.exit(1);
+}
 
 // La primera vez que se arranca en una terminal, pregunta si quieres dar una estrella al proyecto en GitHub.
 // Solo se da si respondes que sí, y con tu propia sesión del CLI de GitHub (gh); nunca sin preguntar.
 // No pregunta sin terminal (Docker, CI, en segundo plano), con --no-star, ni una vez que ya has respondido.
 const ASKED = path.join(__dirname, '.mapache-star-asked');
 function askStar() {
-  if (!process.stdin.isTTY || !process.stdout.isTTY || process.env.CI || process.argv.includes('--no-star') || fs.existsSync(ASKED)) return;
+  if (TEAM || !process.stdin.isTTY || !process.stdout.isTTY || process.env.CI || process.argv.includes('--no-star') || fs.existsSync(ASKED)) return;
   const rl = require('readline').createInterface({ input: process.stdin, output: process.stdout });
   rl.question(say(`\n¿Te gusta Mapache? ¿Le das una estrella en GitHub (${REPO})? [s/N] `, `\nEnjoying Mapache? Star it on GitHub (${REPO})? [y/N] `), (answer) => {
     rl.close();
@@ -49,14 +64,27 @@ const TYPES = {
 
 const store = Store.open();
 
-// ---------- Avisos en directo (Server-Sent Events) ----------
+// ---------- Avisos en directo (Server-Sent Events), presencia y cursores ----------
 
-const clients = new Set();
-function broadcast(event, data) {
-  const msg = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
-  for (const res of clients) res.write(msg);
+// Cada pestaña conectada: { cid, user, board }.
+const clients = new Map();
+const sse = (event, data) => `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+function broadcast(event, data, filter = null) {
+  const msg = sse(event, data);
+  for (const [res, c] of clients) if (!filter || filter(c)) res.write(msg);
 }
-setInterval(() => { for (const res of clients) res.write(': ping\n\n'); }, 25000).unref();
+setInterval(() => { for (const res of clients.keys()) res.write(': ping\n\n'); }, 25000).unref();
+
+// Quién está conectado y en qué tablero (solo en modo equipo).
+let presenceTimer = null;
+function presence() {
+  if (!TEAM) return;
+  clearTimeout(presenceTimer);
+  presenceTimer = setTimeout(() => {
+    const people = [...clients.values()].filter((c) => c.user).map((c) => ({ cid: c.cid, id: c.user.id, name: c.user.name, color: c.user.color, board: c.board }));
+    broadcast('presence', { people });
+  }, 60);
+}
 
 // Vigila la carpeta: cualquier cambio en un tablero (de la app, de la línea de comandos o del MCP) se avisa.
 const known = new Map(store.listBoards().map((b) => [b.id, b.rev || 0]));
@@ -94,17 +122,7 @@ function rescan() {
   checkFolders();
 }
 
-// ---------- Seguridad: solo este ordenador y solo la propia app ----------
-
-// Evita que una web cualquiera lea o cambie tus tableros: el Host debe ser localhost (frena el «DNS rebinding»)
-// y, si el navegador manda Origin, debe ser esta misma dirección.
-const LOCAL_HOSTS = new Set([`localhost:${PORT}`, `127.0.0.1:${PORT}`, `[::1]:${PORT}`]);
-function allowed(req) {
-  if (!LOCAL_HOSTS.has(String(req.headers.host || '').toLowerCase())) return false;
-  const origin = req.headers.origin;
-  if (origin && !LOCAL_HOSTS.has(origin.toLowerCase().replace(/^http:\/\//, ''))) return false;
-  return true;
-}
+// ---------- Utilidades HTTP ----------
 
 function readBody(req, limit = 600 * 1024 * 1024) {
   return new Promise((resolve, reject) => {
@@ -124,35 +142,87 @@ function send(res, status, data) {
   res.end(data === undefined ? '' : JSON.stringify(data));
 }
 
+// Dirección pública con la que el navegador ve este servidor (para enlaces de invitación y comprobar el Origin).
+const secure = (req) => (PUBLIC_URL ? PUBLIC_URL.startsWith('https:') : TRUST_PROXY && String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim() === 'https');
+function origin(req) {
+  if (PUBLIC_URL) return PUBLIC_URL;
+  const host = (TRUST_PROXY && req.headers['x-forwarded-host']) || req.headers.host || `localhost:${PORT}`;
+  return `${secure(req) ? 'https' : 'http'}://${String(host).split(',')[0].trim()}`;
+}
+
+// ---------- Seguridad ----------
+
+// Modo local: el Host debe ser localhost (frena el «DNS rebinding») y, si el navegador manda Origin, debe ser esta
+// misma dirección. Así ninguna web que visites puede leer ni cambiar tus tableros.
+const LOCAL_HOSTS = new Set([`localhost:${PORT}`, `127.0.0.1:${PORT}`, `[::1]:${PORT}`]);
+function allowedLocal(req) {
+  if (!LOCAL_HOSTS.has(String(req.headers.host || '').toLowerCase())) return false;
+  const o = req.headers.origin;
+  if (o && !LOCAL_HOSTS.has(o.toLowerCase().replace(/^http:\/\//, ''))) return false;
+  return true;
+}
+// Modo equipo: los cambios hechos con la cookie de sesión deben venir de la propia app (contra CSRF).
+function sameOrigin(req) {
+  const o = req.headers.origin;
+  if (!o) return req.method === 'GET' || req.method === 'HEAD';
+  return o.toLowerCase() === origin(req).toLowerCase();
+}
+
+let team = null;
+let auth = null;
+if (TEAM) {
+  auth = require('./lib/auth').open(store.dir);
+  team = require('./lib/team').makeTeam({ auth, send, readJSON, origin, secure, onTeamChange: () => broadcast('team', { at: Date.now() }), onSignOut: signOut });
+  // Primera cuenta sin pasar por la web (útil en Docker): MAPACHE_ADMIN_EMAIL y MAPACHE_ADMIN_PASSWORD.
+  if (auth.needsSetup() && process.env.MAPACHE_ADMIN_EMAIL && process.env.MAPACHE_ADMIN_PASSWORD) {
+    try { auth.createUser({ email: process.env.MAPACHE_ADMIN_EMAIL, name: process.env.MAPACHE_ADMIN_NAME, password: process.env.MAPACHE_ADMIN_PASSWORD, role: 'admin' }); } catch (e) { console.error(e.message); }
+  }
+}
+const canWrite = (user) => !TEAM || (user && user.role !== 'viewer');
+
+// Sin sesión válida (rol cambiado, cuenta quitada, contraseña nueva o cierre de sesión): se cierran sus pestañas en
+// directo para que vuelvan a la pantalla de acceso en el momento.
+function signOut(userId) {
+  for (const [res, c] of clients) {
+    if (c.user && c.user.id === userId) { res.write(sse('signout', {})); res.end(); clients.delete(res); }
+  }
+  presence();
+}
+
 // ---------- API para la app ----------
 
 const sessionFile = path.join(store.dir, 'session.json');
+const readSession = () => { try { return JSON.parse(fs.readFileSync(sessionFile, 'utf8')); } catch { return {}; } };
 
-// Exportar un tablero para tu agente: lo dibuja la pestaña de Mapache abierta (la última que se conectó) y lo devuelve.
+// Exportar un tablero para tu agente: lo dibuja una pestaña de Mapache abierta (de esa persona, en modo equipo).
 const exportsPending = new Map();
-function exportFromApp(id, format) {
-  if (!clients.size) return Promise.resolve({ error: 'no-app' });
-  const reqId = require('crypto').randomUUID();
-  const target = [...clients].pop();
+function exportFromApp(id, format, user) {
+  const mine = [...clients].filter(([, c]) => !TEAM || (user && c.user && c.user.id === user.id));
+  if (!mine.length) return Promise.resolve({ error: 'no-app' });
+  const reqId = crypto.randomUUID();
+  const [target] = mine[mine.length - 1];
   return new Promise((resolve) => {
     const timer = setTimeout(() => { exportsPending.delete(reqId); resolve({ error: 'The Mapache tab did not answer in time' }); }, 90000);
     exportsPending.set(reqId, (r) => { clearTimeout(timer); resolve(r); });
-    target.write(`event: export\ndata: ${JSON.stringify({ reqId, id, format })}\n\n`);
+    target.write(sse('export', { reqId, id, format }));
   });
 }
+const mineFilter = (user) => (c) => !TEAM || (user && c.user && c.user.id === user.id);
 
-async function api(req, res, url) {
+async function api(req, res, url, user) {
   const parts = url.split('/').filter(Boolean).slice(1); // sin 'api'
   const [kind, id] = parts;
   const m = req.method;
-  if (kind === 'info' && m === 'GET') {
-    return send(res, 200, { app: 'mapache', version, dataDir: store.dir, pid: process.pid, port: PORT, appDir: __dirname, node: process.execPath, bin: path.join(__dirname, 'bin', 'mapache.js') });
-  }
+  const write = m !== 'GET' && m !== 'HEAD';
+  if (write && !canWrite(user) && !['session', 'cursor', 'me', 'export'].includes(kind)) return send(res, 403, { error: 'Your role can only view boards' });
+  if (TEAM && team) { const done = await team.teamRoutes(req, res, parts, user); if (done) return; }
   if (kind === 'events' && m === 'GET') {
-    res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-store', Connection: 'keep-alive' });
-    res.write(`retry: 2000\nevent: hello\ndata: ${JSON.stringify({ version, dataDir: store.dir })}\n\n`);
-    clients.add(res);
-    req.on('close', () => clients.delete(res));
+    const cid = crypto.randomUUID();
+    res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-store', Connection: 'keep-alive', 'X-Accel-Buffering': 'no' });
+    res.write(`retry: 2000\n${sse('hello', { version, cid, ...(TEAM ? {} : { dataDir: store.dir }) })}`);
+    clients.set(res, { cid, user: TEAM ? user : null, board: null });
+    presence();
+    req.on('close', () => { clients.delete(res); presence(); });
     return;
   }
   if (kind === 'boards') {
@@ -200,16 +270,33 @@ async function api(req, res, url) {
       return send(res, 200, { ok: true });
     }
   }
-  // La app dice qué tablero tiene abierto: así «el tablero que estoy viendo» funciona para el agente.
+  // La app dice qué tablero tiene abierto: así «el tablero que estoy viendo» funciona para el agente (de cada persona,
+  // en modo equipo) y los demás ven en qué tablero estás.
   if (kind === 'session' && m === 'PUT') {
-    const s = await readJSON(req);
-    Store.writeAtomic(sessionFile, JSON.stringify({ openBoard: s && typeof s.openBoard === 'string' ? s.openBoard : null, at: Date.now() }));
+    const s = (await readJSON(req)) || {};
+    const openBoard = typeof s.openBoard === 'string' ? s.openBoard : null;
+    const prev = readSession();
+    const byUser = { ...(prev.byUser || {}) };
+    if (user) byUser[user.id] = { openBoard, at: Date.now() };
+    Store.writeAtomic(sessionFile, JSON.stringify({ openBoard, at: Date.now(), byUser }));
+    for (const c of clients.values()) if (c.cid === s.cid) { c.board = openBoard; presence(); }
+    return send(res, 200, { ok: true });
+  }
+  // Cursores en directo: se reenvían a quien esté en el mismo tablero.
+  if (kind === 'cursor' && m === 'POST') {
+    const s = (await readJSON(req)) || {};
+    const me = [...clients.values()].find((c) => c.cid === s.cid);
+    if (TEAM && me && user && Number.isFinite(s.x) && Number.isFinite(s.y)) {
+      me.board = typeof s.board === 'string' ? s.board : me.board;
+      broadcast('cursor', { cid: me.cid, id: user.id, name: user.name, color: user.color, board: me.board, x: Math.round(s.x), y: Math.round(s.y) },
+        (c) => c.cid !== me.cid && c.board === me.board);
+    }
     return send(res, 200, { ok: true });
   }
   if (kind === 'export' && !id && m === 'POST') {
     const s = await readJSON(req);
     if (!s || typeof s.id !== 'string') return send(res, 400, { error: 'Expected { id, format }' });
-    const r = await exportFromApp(s.id, String(s.format || 'html'));
+    const r = await exportFromApp(s.id, String(s.format || 'html'), user);
     if (r.error) return send(res, r.error === 'no-app' ? 409 : 502, { error: r.error });
     res.writeHead(200, { 'Content-Type': 'application/octet-stream', 'Cache-Control': 'no-store' });
     return res.end(r.file);
@@ -226,35 +313,46 @@ async function api(req, res, url) {
   // Abrir un tablero en la pestaña de Mapache que ya está abierta (lo pide open_board).
   if (kind === 'open' && m === 'POST') {
     const s = await readJSON(req);
-    if (clients.size && s && s.id) broadcast('show', { id: String(s.id) });
-    return send(res, 200, { clients: clients.size });
+    const n = [...clients.values()].filter(mineFilter(user)).length;
+    if (n && s && s.id) broadcast('show', { id: String(s.id) }, mineFilter(user));
+    return send(res, 200, { clients: n });
   }
   return send(res, 404, { error: 'Not found' });
 }
 
+function info(req, user) {
+  const base = { app: 'mapache', version, mode: TEAM ? 'team' : 'local' };
+  if (!TEAM) return { ...base, dataDir: store.dir, pid: process.pid, port: PORT, appDir: __dirname, node: process.execPath, bin: path.join(__dirname, 'bin', 'mapache.js') };
+  const out = { ...base, user: user || null, needsSetup: auth.needsSetup(), url: origin(req) };
+  if (user && user.role === 'admin') Object.assign(out, { dataDir: store.dir, port: PORT });
+  return out;
+}
+
 // ---------- MCP por HTTP (Streamable HTTP, sin estado) ----------
 
-const mcp = MCP.makeServer({ store, open: (id, launch) => openFromHere(id, launch), exportBoard: (id, format) => exportHere(id, format) });
-async function exportHere(id, format) {
+async function exportHere(id, format, user) {
   for (let i = 0; i < 40; i++) {
-    const r = await exportFromApp(id, format);
+    const r = await exportFromApp(id, format, user);
     if (r.file) return r.file;
     if (r.error !== 'no-app') throw new Error(r.error);
+    if (TEAM) throw new Error('Open Mapache in your browser first: the app draws the export');
     if (i === 0) await Launch.openURL(`http://localhost:${PORT}/#m=${encodeURIComponent(id)}`);
     await new Promise((ok) => setTimeout(ok, 500));
   }
   throw new Error('Mapache needs to be open in a browser to export. Open it and try again');
 }
-async function openFromHere(id, launch) {
-  const url = `http://localhost:${PORT}/#m=${encodeURIComponent(id)}`;
-  if (launch && clients.size) broadcast('show', { id });
-  else if (launch) await Launch.openURL(url);
+async function openFromHere(id, launch, user) {
+  const url = `${TEAM ? PUBLIC_URL || `http://localhost:${PORT}` : `http://localhost:${PORT}`}/#m=${encodeURIComponent(id)}`;
+  const mine = [...clients.values()].filter(mineFilter(user)).length;
+  if (launch && mine) broadcast('show', { id }, mineFilter(user));
+  else if (launch && !TEAM) await Launch.openURL(url);
   return url;
 }
-async function mcpHTTP(req, res) {
+async function mcpHTTP(req, res, user) {
   if (req.method !== 'POST') { res.writeHead(405, { Allow: 'POST' }); return res.end(); }
   const msg = await readJSON(req);
-  const out = await mcp.handle(msg);
+  const server = MCP.makeServer({ store, user: TEAM ? user : null, open: (id, launch) => openFromHere(id, launch, user), exportBoard: (id, format) => exportHere(id, format, user) });
+  const out = await server.handle(msg);
   if (!out) { res.writeHead(202); return res.end(); }
   return send(res, 200, out);
 }
@@ -266,8 +364,25 @@ const server = http.createServer(async (req, res) => {
   try { url = decodeURIComponent(new URL(req.url, 'http://localhost').pathname); } catch { res.writeHead(400); return res.end(); }
   try {
     if (url === '/api' || url.startsWith('/api/') || url === '/mcp') {
-      if (!allowed(req)) return send(res, 403, { error: 'Forbidden' });
-      return url === '/mcp' ? await mcpHTTP(req, res) : await api(req, res, url);
+      let user = null;
+      if (!TEAM) {
+        if (!allowedLocal(req)) return send(res, 403, { error: 'Forbidden' });
+      } else {
+        user = team.who(req);
+        // Con cookie, los cambios tienen que venir de la propia app; con token (agentes) no hay navegador.
+        const bearer = /^Bearer\s/i.test(String(req.headers.authorization || ''));
+        if (!bearer && !sameOrigin(req)) return send(res, 403, { error: 'Forbidden' });
+      }
+      if (url === '/api/info' && req.method === 'GET') return send(res, 200, info(req, user));
+      if (TEAM && url.startsWith('/api/auth/')) {
+        if (await team.authRoutes(req, res, url.split('/').filter(Boolean).slice(1))) return;
+        return send(res, 404, { error: 'Not found' });
+      }
+      if (TEAM && !user) {
+        if (url === '/mcp') res.setHeader('WWW-Authenticate', 'Bearer realm="mapache"');
+        return send(res, 401, { error: 'Log in first' });
+      }
+      return url === '/mcp' ? await mcpHTTP(req, res, user) : await api(req, res, url, user);
     }
   } catch (e) {
     if (!e.status) console.error(e);
@@ -278,16 +393,21 @@ const server = http.createServer(async (req, res) => {
   if (file !== ROOT && !file.startsWith(ROOT + path.sep)) { res.writeHead(403); return res.end(); }
   fs.readFile(file, (err, data) => {
     if (err) { res.writeHead(404); return res.end('Not found'); }
-    res.writeHead(200, { 'Content-Type': TYPES[path.extname(file)] || 'application/octet-stream', 'Cache-Control': 'no-cache' });
+    const headers = { 'Content-Type': TYPES[path.extname(file)] || 'application/octet-stream', 'Cache-Control': 'no-cache' };
+    if (TEAM) Object.assign(headers, { 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'same-origin', 'X-Frame-Options': 'SAMEORIGIN' });
+    res.writeHead(200, headers);
     res.end(data);
   });
 });
 
-server.listen(PORT, '127.0.0.1', () => {
-  Store.writeAtomic(path.join(store.dir, 'server.json'), JSON.stringify({ pid: process.pid, port: PORT, version, startedAt: Date.now() }));
+server.listen(PORT, HOST, () => {
+  Store.writeAtomic(path.join(store.dir, 'server.json'), JSON.stringify({ pid: process.pid, port: PORT, version, mode: TEAM ? 'team' : 'local', startedAt: Date.now() }));
   watch();
-  console.log(say(`Mapache en http://localhost:${PORT}`, `Mapache is running at http://localhost:${PORT}`));
-  console.log(say(`Tus tableros: ${store.dir}`, `Your boards: ${store.dir}`));
+  if (TEAM) {
+    console.log(say(`Mapache (modo equipo) en ${PUBLIC_URL || `http://${HOST === '0.0.0.0' ? 'localhost' : HOST}:${PORT}`}`, `Mapache (team mode) is running at ${PUBLIC_URL || `http://${HOST === '0.0.0.0' ? 'localhost' : HOST}:${PORT}`}`));
+    if (team.setupCode()) console.log(say(`Código para crear la cuenta de admin: ${team.setupCode()}`, `Setup code to create the admin account: ${team.setupCode()}`));
+  } else console.log(say(`Mapache en http://localhost:${PORT}`, `Mapache is running at http://localhost:${PORT}`));
+  console.log(say(`Tableros: ${store.dir}`, `Boards: ${store.dir}`));
   askStar();
 }).on('error', (e) => {
   if (e.code === 'EADDRINUSE') { console.log(say(`Ya estaba abierto en http://localhost:${PORT}`, `Already running at http://localhost:${PORT}`)); process.exit(0); }

@@ -7,6 +7,7 @@
 <p align="center">
   <a href="#-empezar"><b>Empezar</b></a> ·
   <a href="#-tu-agente-de-ia-tambi%C3%A9n-puede-usarlo">Agentes de IA (MCP)</a> ·
+  <a href="#-para-equipos">Equipos</a> ·
   <a href="#-funciones">Funciones</a> ·
   <a href="#gu%C3%ADa-de-uso">Guía de uso</a> ·
   <a href="#%EF%B8%8F-hoja-de-ruta">Hoja de ruta</a> ·
@@ -51,6 +52,7 @@ funciona hasta en un avión y **tu agente de IA puede leerlos y trabajar en ello
 | Dónde están tus tableros | **Archivos en tu ordenador** | Su nube |
 | Sin conexión | **Sí** | Limitado |
 | Tu agente de IA puede leer y editar tableros | **Sí, en local (MCP)** | Desde su nube, si acaso |
+| Servidor para equipos con cuentas y cursores en directo | **Sí, en tu servidor con Docker** | Su nube, por usuario |
 | Código abierto y autoalojable | **Sí** | No |
 | Dependencias que instalar | **0** | — |
 
@@ -119,6 +121,19 @@ conéctalo tú (cambia la ruta por donde instalaste Mapache; `node bin/mapache.j
 
 Las herramientas que recibe el agente y la línea de comandos están explicadas en el [README en inglés](README.md#-your-ai-agent-can-use-it-too)
 y en `node bin/mapache.js help`.
+
+## 👥 Para equipos
+
+Monta un Mapache para todo tu equipo en vuestro propio servidor: **cuentas con email y contraseña, enlaces de
+invitación, roles (admin, puede editar, solo ver), cursores en directo y quién está en cada tablero**, y cada cambio en
+la pantalla de todos al momento. Cada persona puede conectar su propio agente de IA con un token personal.
+
+```bash
+git clone https://github.com/Hackeatutiempo/mapache.git && cd mapache
+docker compose up -d          # abre http://<servidor>:4321 y usa el código que sale en: docker logs mapache
+```
+
+Con dominio, `docker compose --profile https up -d` añade HTTPS automático. Todo está en [TEAM.md](TEAM.md) (en inglés).
 
 ## ✨ Funciones
 
@@ -244,8 +259,8 @@ Pulsa **?** dentro de la app para ver todos los atajos.
 - [x] Tableros como archivos en tu ordenador, sincronizados en directo entre pestañas y navegadores
 - [x] Servidor MCP y línea de comandos para que los agentes de IA lean y editen tableros
 - [x] Compartir un tablero como una sola página web, PDF, PNG o SVG
-- [ ] Servidor para equipos con Docker: cuentas, proyectos y enlaces de invitación
-- [ ] Colaboración en tiempo real (CRDT, sigue funcionando sin conexión)
+- [x] Servidor para equipos con Docker: cuentas, roles y enlaces de invitación
+- [x] Colaboración en tiempo real: cambios, cursores y presencia en directo, cambios simultáneos fusionados, sin conexión también
 - [ ] Comentarios y menciones
 
 ¿Tienes una idea? [Abre una incidencia](https://github.com/Hackeatutiempo/mapache/issues).

@@ -1,0 +1,8 @@
+# HTTPS automático para Mapache (docker compose --profile https up -d). Caddy pide y renueva el certificado solo.
+{$DOMAIN} {
+	encode gzip
+	reverse_proxy mapache:4321 {
+		# Los avisos en directo (Server-Sent Events) no se deben retener.
+		flush_interval -1
+	}
+}

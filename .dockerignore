@@ -1,0 +1,12 @@
+.git
+.github
+.claude
+node_modules
+private
+docs
+test
+*.md
+.mapache-star-asked
+Abrir Mapache.cmd
+start.sh
+.env

@@ -161,6 +161,28 @@ node MAPACHE/bin/mapache.js show open        # the board open in the app
 
 ---
 
+## Set up Mapache for a team (Docker)
+
+If the person wants one Mapache for several people, follow [TEAM.md](TEAM.md). In short, on a computer or server with
+Docker (ask before installing Docker):
+
+```bash
+git clone https://github.com/Hackeatutiempo/mapache.git && cd mapache
+docker compose up -d
+docker logs mapache   # the setup code for the first (admin) account
+```
+
+Then open `http://<server>:4321` with the person, or create the admin account for them with
+`docker exec -it mapache node bin/mapache.js team admin <their email>` (it prints a password: give it to them
+privately). For a domain with HTTPS, write `DOMAIN`, `PUBLIC_URL` and `TRUST_PROXY=1` in `.env` and use
+`docker compose --profile https up -d`. Invite people from the app (avatar > People and invitations) or with
+`node bin/mapache.js team invite`.
+
+**Connecting an agent to a team server** uses HTTP instead of stdio: the person creates a token in *Connect your AI
+agent* and you add `https://<server>/mcp` with the header `Authorization: Bearer <token>` (Claude Code:
+`claude mcp add --transport http mapache https://<server>/mcp --header "Authorization: Bearer <token>"`). You then act
+with that person's role; with *Can view* you can only read.
+
 ## Updating
 
 ```bash
