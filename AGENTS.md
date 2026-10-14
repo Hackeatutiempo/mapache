@@ -152,6 +152,9 @@ node MAPACHE/bin/mapache.js show open        # the board open in the app
   `*italic*`, `` `code` ``, `[link](https://…)`.
 - **If the app is open, the person sees your changes live** and can undo them with Ctrl+Z. After a big change, offer
   to show it with `open_board`.
+- **Comments:** `add_comment` (on a node or item, or free), `reply_comment`, `resolve_comment` and `list_comments`.
+  Use them to leave notes or questions for the person instead of changing their content; `@Name` mentions a
+  team member and rings their bell.
 - **Sharing:** `export_board` saves a board as a single web page (`html`, opens in any browser), `pdf`, `png` or `svg`,
   in Downloads by default (or `path`). The app does the drawing, so it opens the board in the browser if needed.
 - **Do not delete anything unless asked.** `delete_board` moves the board to the trash

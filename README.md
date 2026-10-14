@@ -42,6 +42,8 @@ it keeps working on a plane, and **your AI agent can read them and build on them
 - 🎨 **A real whiteboard around them.** Sticky notes, 12 shapes, sections, connectors that route around
   objects, freehand drawing with shape recognition, images and videos.
 - 📊 **Data built in.** Paste a table from Excel or Google Sheets and turn it into any of 17 chart types.
+- 💬 **Comments and mentions.** Pin a comment anywhere, reply, resolve, and @mention people (or let your agent leave
+  notes for you to review).
 - 🤖 **Made for AI agents.** A built-in MCP server lets Claude, Codex, Cursor and friends read your boards and create
   mind maps, notes, flowcharts and tables. You watch them appear live.
 - 🔒 **Yours, for real.** Local-first, no telemetry, plain JSON files you can read, back up or put in Git. AGPL-3.0.
@@ -131,6 +133,7 @@ these with your real paths):
 | `add_nodes`, `update_nodes`, `move_node`, `delete_nodes`, `add_mindmap` | Grow and edit mind maps from indented outlines |
 | `add_items`, `update_items`, `delete_items` | Sticky notes, text, shapes, sections, stickers, tables, charts and video embeds |
 | `connect` | Arrows between anything, with labels |
+| `list_comments`, `add_comment`, `reply_comment`, `resolve_comment` | Read and write comments, with @mentions |
 | `export_board` | Save a board as a shareable web page, PDF, PNG or SVG |
 | `open_board` | Show a board in the browser |
 
@@ -216,7 +219,8 @@ nothing to install. Or as PDF, PNG or SVG. Your agent can do it too ("save this 
 | **Guides** | Smart alignment guides snap edges and centers while you drag (hold Alt to skip) |
 | **Right-click menu** | Copy and paste style, save as default style, arrange, align, lock, wrap in section, snap to grid and copy a link to that spot on the board |
 | **Folders** | Nested folders and maps in the sidebar, drag to reorganize, a color and an icon for each |
-| **AI agents** | MCP server and command line with 18 tools; changes from your agent appear live and can be undone |
+| **AI agents** | MCP server and command line with 22 tools; changes from your agent appear live and can be undone |
+| **Comments** | Pins on the board or on any object, threads with replies, resolve, @mentions with a bell for unread ones (K) |
 | **Sync** | Boards are files on your computer; every open tab and browser stays in sync, edits made offline sync later, and simultaneous changes are merged |
 | **Teams** | Self-hosted team server (Docker): accounts, invitation links, roles, live cursors and presence, personal agent tokens |
 | **Languages** | English and Spanish, following your browser (switch any time) |
@@ -232,6 +236,7 @@ nothing to install. Or as PDF, PNG or SVG. Your agent can do it too ("save this 
 | `Tab` · `Enter` | Child · sibling (while typing) |
 | `M` · `N` · `T` · `R` | New mind map · sticky note · text · shape |
 | `C` · `H` · `E` · `I` | Connector · freehand · table · image or video |
+| `K` | Comment |
 | `Drag on canvas` · `Ctrl A` | Select many · select all |
 | `Shift L` · `Ctrl Alt C / V` | Lock · copy and paste style |
 | `1` · `0` · `Space + drag` | Fit · 100 % · pan |
@@ -247,7 +252,7 @@ nothing to install. Or as PDF, PNG or SVG. Your agent can do it too ("save this 
 - [x] Share a board as a single HTML page, PDF, PNG or SVG
 - [x] Self-hosted team server with Docker: accounts, roles and invitation links
 - [x] Real-time collaboration: live changes, cursors and presence, merged edits, keeps working offline
-- [ ] Comments and mentions
+- [x] Comments and mentions
 
 Have an idea? [Open an issue](https://github.com/Hackeatutiempo/mapache/issues).
 

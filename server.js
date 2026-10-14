@@ -348,10 +348,16 @@ async function openFromHere(id, launch, user) {
   else if (launch && !TEAM) await Launch.openURL(url);
   return url;
 }
+// El MCP por HTTP no guarda estado entre peticiones: se recuerda qué cliente (Claude Code, Codex…) usa cada persona
+// para firmar sus comentarios.
+const mcpClients = new Map();
 async function mcpHTTP(req, res, user) {
   if (req.method !== 'POST') { res.writeHead(405, { Allow: 'POST' }); return res.end(); }
   const msg = await readJSON(req);
-  const server = MCP.makeServer({ store, user: TEAM ? user : null, open: (id, launch) => openFromHere(id, launch, user), exportBoard: (id, format) => exportHere(id, format, user) });
+  const key = user ? user.id : 'local';
+  const ci = msg && msg.method === 'initialize' && msg.params && msg.params.clientInfo;
+  if (ci && (ci.title || ci.name)) mcpClients.set(key, { name: String(ci.title || ci.name).slice(0, 80) });
+  const server = MCP.makeServer({ store, user: TEAM ? user : null, client: mcpClients.get(key) || null, open: (id, launch) => openFromHere(id, launch, user), exportBoard: (id, format) => exportHere(id, format, user) });
   const out = await server.handle(msg);
   if (!out) { res.writeHead(202); return res.end(); }
   return send(res, 200, out);

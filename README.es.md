@@ -41,6 +41,8 @@ funciona hasta en un avión y **tu agente de IA puede leerlos y trabajar en ello
 - 🎨 **Una pizarra de verdad alrededor.** Notas, 12 formas, secciones, conectores que rodean los objetos, dibujo
   a mano con detección de formas, imágenes y vídeos.
 - 📊 **Datos incluidos.** Pega una tabla de Excel o Google Sheets y conviértela en cualquiera de 17 gráficos.
+- 💬 **Comentarios y menciones.** Deja un comentario en cualquier punto o en cualquier objeto, responde, resuélvelo y
+  menciona a alguien con @ (o deja que tu agente te deje notas para revisar).
 - 🤖 **Hecho para agentes de IA.** Su servidor MCP permite que Claude, Codex, Cursor y compañía lean tus tableros y
   creen mapas mentales, notas, diagramas y tablas. Los ves aparecer en directo.
 - 🔒 **Tuyo de verdad.** Primero en local, sin telemetría y en archivos JSON que puedes leer, copiar o guardar en Git. AGPL-3.0.
@@ -246,6 +248,8 @@ botón hasta donde lo quieras.
   Las formas crecen con su texto.
 - **Exportar y compartir:** el botón de imagen de arriba a la derecha guarda el tablero como página web para compartir
   (un solo archivo .html que se abre en cualquier navegador), PDF, PNG o SVG.
+- **Comentarios (K):** clic en el lienzo o en un objeto para dejar un comentario; responde, resuelve y menciona con @.
+  El botón de comentarios (arriba a la derecha) los lista y la campana avisa de tus menciones.
 - **Tema:** botón de sol o luna arriba a la derecha (oscuro, claro o según el sistema).
 - **Idioma:** español o inglés, según tu navegador; se cambia con el botón del globo, junto al del tema.
 
@@ -261,7 +265,7 @@ Pulsa **?** dentro de la app para ver todos los atajos.
 - [x] Compartir un tablero como una sola página web, PDF, PNG o SVG
 - [x] Servidor para equipos con Docker: cuentas, roles y enlaces de invitación
 - [x] Colaboración en tiempo real: cambios, cursores y presencia en directo, cambios simultáneos fusionados, sin conexión también
-- [ ] Comentarios y menciones
+- [x] Comentarios y menciones
 
 ¿Tienes una idea? [Abre una incidencia](https://github.com/Hackeatutiempo/mapache/issues).
 

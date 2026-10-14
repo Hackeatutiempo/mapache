@@ -11,6 +11,14 @@
 - **Real-time collaboration**: avatars of who is on the board, live cursors with names, and everyone's changes on
   screen as they happen (merged when simultaneous).
 - **Agents per person**: personal tokens and HTTP MCP (`/mcp` with `Authorization: Bearer`), with the person's role.
+- **Comments and mentions** (also without a team): pins on the board or on any object, threads with replies,
+  resolve and reopen, `@mentions` with a bell for unread ones, a comments panel, links to a thread, and four MCP tools
+  (`list_comments`, `add_comment`, `reply_comment`, `resolve_comment`) plus `mapache comment` and `mapache comments`.
+  Agents sign as their client (for example "Claude Code (Ana)").
+
+### Fixed
+- Two tabs of the same browser could keep re-saving each other after a simultaneous edit.
+- Deleting a multi-selection could throw while redrawing the selection bar.
 - [TEAM.md](TEAM.md): install, HTTPS, people, agents, backups, updates and security notes.
 
 ## 0.4.1 — 2026-10-14

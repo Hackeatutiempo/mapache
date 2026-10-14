@@ -1,6 +1,6 @@
 {
   "name": "mapache",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "description": "Open-source mind maps and infinite whiteboard on your computer, with an MCP server so your AI agent can build boards with you",
   "license": "AGPL-3.0-or-later",
   "author": "Hackeatutiempo",
