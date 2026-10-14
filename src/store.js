@@ -107,10 +107,13 @@
       // Otro (tu agente, otra pestaña u otro navegador) lo cambió a la vez: se juntan los dos cambios y se vuelve a subir.
       const theirs = (await res.json()).board;
       const merged = Merge.mergeBoard(s && s.base, m, strip(theirs));
-      await idb.maps.put(merged);
-      await idb.sync.put({ key, rev: theirs.rev, base: strip(theirs), dirty: true });
+      // Si el servidor ya lo tiene todo (lo subió otra pestaña de este navegador, que comparte estos datos), no se vuelve
+      // a subir: si no, dos pestañas abiertas se pisan una y otra vez.
+      const pending = !Merge.same({ ...merged, updatedAt: 0 }, { ...strip(theirs), updatedAt: 0 });
+      await idb.maps.put(pending ? merged : strip(theirs));
+      await idb.sync.put({ key, rev: theirs.rev, base: strip(theirs), dirty: pending });
       emit({ type: 'board', id });
-      return pushBoard(id);
+      return pending ? pushBoard(id) : undefined;
     }
     console.warn('Mapache: no se pudo guardar en el servidor', res.status);
   }
