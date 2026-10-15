@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.3 — 2026-10-15
+
+### Improved
+- Clearer tools for AI agents: every MCP tool now says what it returns, when to use it instead of a similar one, and
+  what it changes, every parameter is described, and each tool declares whether it only reads, changes or deletes
+  (MCP annotations). Agents pick the right tool more often and need fewer tries.
+- `glama.json` for the [Glama](https://glama.ai/mcp/servers/Hackeatutiempo/mapache) MCP directory.
+
 ## 0.5.2 — 2026-10-14
 
 ### Fixed
