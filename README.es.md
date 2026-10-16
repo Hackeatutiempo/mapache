@@ -18,6 +18,7 @@
   <a href="https://github.com/Hackeatutiempo/mapache/actions/workflows/test.yml"><img alt="Tests" src="https://github.com/Hackeatutiempo/mapache/actions/workflows/test.yml/badge.svg"></a>
   <a href="LICENSE"><img alt="Licencia: AGPL-3.0" src="https://img.shields.io/badge/licencia-AGPL--3.0-8b5cf6"></a>
   <a href="#-tu-agente-de-ia-tambi%C3%A9n-puede-usarlo"><img alt="Servidor MCP incluido" src="https://img.shields.io/badge/MCP-incluido-a78bfa"></a>
+  <a href="https://glama.ai/mcp/servers/Hackeatutiempo/mapache"><img alt="Servidor MCP de Mapache: nota de calidad y mantenimiento en Glama" src="https://glama.ai/mcp/servers/Hackeatutiempo/mapache/badges/score.svg"></a>
   <img alt="Cero dependencias" src="https://img.shields.io/badge/dependencias-0-22c55e">
   <img alt="Funciona sin conexión" src="https://img.shields.io/badge/funciona-sin%20conexi%C3%B3n-0ea5e9">
   <a href="#-contribuir"><img alt="Se aceptan PR" src="https://img.shields.io/badge/PRs-bienvenidas-f97316"></a>
