@@ -199,3 +199,43 @@ test('auth: passwords are hashed with scrypt and checked in constant time', () =
   const saved = fs.readFileSync(path.join(dir, 'users.json'), 'utf8');
   assert.ok(!saved.includes('long-enough') && !saved.includes(api), 'no secrets in clear text');
 });
+
+test('team: MCP comment names stay isolated between tokens of one user', async () => {
+  const token = async (name) => {
+    const r = await req('POST', '/api/me/tokens', { body: { name }, headers: as(admin) });
+    assert.strictEqual(r.status, 200);
+    return r.json.token;
+  };
+  const a = await token('Agent A'), b = await token('Agent B');
+  assert.notStrictEqual(a, b);
+  const mcp = (tok, method, params) => req('POST', '/mcp', { body: { jsonrpc: '2.0', id: 1, method, params }, headers: { Authorization: `Bearer ${tok}` } });
+  const init = (tok, name) => mcp(tok, 'initialize', { protocolVersion: '2024-11-05', capabilities: {}, clientInfo: { name, version: '1' } });
+  const call = (tok, name, args) => mcp(tok, 'tools/call', { name, arguments: args });
+  const comment = async (tok, text) => {
+    const r = await call(tok, 'add_comment', { board: 'attribution', text });
+    assert.strictEqual(r.status, 200);
+    assert.ok(r.json.result && !r.json.result.isError);
+  };
+  const board = { id: 'attribution', title: 'Attribution', doc: { rootId: 'r', settings: {}, nodes: { r: { id: 'r', parentId: null, order: 1, lines: ['Root'] } }, items: {} } };
+  assert.strictEqual((await req('PUT', '/api/boards/attribution', { body: { board, baseRev: null }, headers: as(admin) })).status, 200);
+  assert.strictEqual((await init(a, 'claude-code')).status, 200);
+  await comment(a, 'A before B initializes');
+  assert.strictEqual((await init(b, 'codex-mcp-client')).status, 200);
+  await comment(a, 'A after B initializes');
+  await comment(b, 'B actual comment');
+  const saved = (await req('GET', '/api/boards/attribution', { headers: { Cookie: admin } })).json;
+  const comments = Object.values(saved.doc.comments);
+  assert.strictEqual(comments.length, 3);
+  assert.strictEqual(comments.find((c) => c.text === 'A before B initializes').author.name, 'Claude Code (Ana)');
+  assert.strictEqual(comments.find((c) => c.text === 'A after B initializes').author.name, 'Claude Code (Ana)');
+  assert.strictEqual(comments.find((c) => c.text === 'B actual comment').author.name, 'Codex (Ana)');
+  // Revocar A sigue bloqueando sus peticiones, sin quitarle el acceso a B.
+  const mine = (await req('GET', '/api/me/tokens', { headers: { Cookie: admin } })).json.tokens;
+  assert.strictEqual((await req('DELETE', `/api/me/tokens/${mine.find((t) => t.name === 'Agent A').id}`, { headers: as(admin) })).status, 200);
+  assert.strictEqual((await call(a, 'add_comment', { board: 'attribution', text: 'MUST NOT EXIST' })).status, 401);
+  const live = await call(b, 'list_boards', {});
+  assert.strictEqual(live.status, 200);
+  assert.ok(live.json.result && !live.json.result.isError);
+  const afterRevocation = (await req('GET', '/api/boards/attribution', { headers: { Cookie: admin } })).json;
+  assert.ok(!Object.values(afterRevocation.doc.comments).some((c) => c.text === 'MUST NOT EXIST'));
+});
