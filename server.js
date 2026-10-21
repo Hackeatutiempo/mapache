@@ -357,13 +357,16 @@ async function openFromHere(id, launch, user) {
   else if (launch && !TEAM) await Launch.openURL(url);
   return url;
 }
-// El MCP por HTTP no guarda estado entre peticiones: se recuerda qué cliente (Claude Code, Codex…) usa cada persona
-// para firmar sus comentarios.
+// Se recuerda el nombre declarado del cliente por credencial, para que dos agentes de una persona
+// no sobrescriban sus firmas. El nombre declarado no autentica la identidad del agente.
 const mcpClients = new Map();
 async function mcpHTTP(req, res, user) {
   if (req.method !== 'POST') { res.writeHead(405, { Allow: 'POST' }); return res.end(); }
   const msg = await readJSON(req);
-  const key = user ? user.id : 'local';
+  let key = user ? 'user:' + user.id : 'local';
+  if (user && user.via === 'token') {
+    key = 'token:' + crypto.createHash('sha256').update(String(req.headers.authorization || '')).digest('hex');
+  }
   const ci = msg && msg.method === 'initialize' && msg.params && msg.params.clientInfo;
   if (ci && (ci.title || ci.name)) mcpClients.set(key, { name: String(ci.title || ci.name).slice(0, 80) });
   const server = MCP.makeServer({ store, user: TEAM ? user : null, client: mcpClients.get(key) || null, open: (id, launch) => openFromHere(id, launch, user), exportBoard: (id, format) => exportHere(id, format, user) });
