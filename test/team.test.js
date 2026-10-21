@@ -223,9 +223,13 @@ test('team: MCP comment names stay isolated between tokens of one user', async (
   assert.strictEqual((await init(b, 'codex-mcp-client')).status, 200);
   await comment(a, 'A after B initializes');
   await comment(b, 'B actual comment');
+  // El mismo token con «bearer» en minúsculas y espacios de más sigue siendo el mismo cliente.
+  const lower = await req('POST', '/mcp', { body: { jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: 'add_comment', arguments: { board: 'attribution', text: 'A lowercase bearer' } } }, headers: { Authorization: `bearer  ${a}` } });
+  assert.strictEqual(lower.status, 200);
   const saved = (await req('GET', '/api/boards/attribution', { headers: { Cookie: admin } })).json;
   const comments = Object.values(saved.doc.comments);
-  assert.strictEqual(comments.length, 3);
+  assert.strictEqual(comments.length, 4);
+  assert.strictEqual(comments.find((c) => c.text === 'A lowercase bearer').author.name, 'Claude Code (Ana)');
   assert.strictEqual(comments.find((c) => c.text === 'A before B initializes').author.name, 'Claude Code (Ana)');
   assert.strictEqual(comments.find((c) => c.text === 'A after B initializes').author.name, 'Claude Code (Ana)');
   assert.strictEqual(comments.find((c) => c.text === 'B actual comment').author.name, 'Codex (Ana)');

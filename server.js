@@ -365,7 +365,8 @@ async function mcpHTTP(req, res, user) {
   const msg = await readJSON(req);
   let key = user ? 'user:' + user.id : 'local';
   if (user && user.via === 'token') {
-    key = 'token:' + crypto.createHash('sha256').update(String(req.headers.authorization || '')).digest('hex');
+    const token = String(req.headers.authorization || '').replace(/^Bearer\s+/i, '').trim();
+    key = 'token:' + crypto.createHash('sha256').update(token).digest('hex');
   }
   const ci = msg && msg.method === 'initialize' && msg.params && msg.params.clientInfo;
   if (ci && (ci.title || ci.name)) mcpClients.set(key, { name: String(ci.title || ci.name).slice(0, 80) });

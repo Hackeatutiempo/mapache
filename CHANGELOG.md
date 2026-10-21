@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.4 — 2026-10-21
+
+### Fixed
+- Team mode: when one person connects two AI agents with different tokens (for example Claude Code and Codex),
+  each keeps its own name on the comments it writes; before, the last one to connect renamed the other's.
+  Thanks to [@xianmgb-cmyk](https://github.com/xianmgb-cmyk) for the fix and its test
+  ([#1](https://github.com/Hackeatutiempo/mapache/pull/1)).
+
 ## 0.5.3 — 2026-10-15
 
 ### Improved
