@@ -8,6 +8,7 @@ const path = require('path');
 const Store = require('../lib/store');
 const Tools = require('../lib/tools');
 const Launch = require('../lib/launch');
+const Update = require('../lib/update');
 const { version } = require('../package.json');
 
 const ROOT = path.join(__dirname, '..');
@@ -83,7 +84,8 @@ App
   open [board]                 Open Mapache (or a board) in the browser, starting it if needed
   start [--team] [--data <dir>] Start Mapache in the background (--team: accounts and invitations, see TEAM.md)
   stop                         Stop it
-  status                       Is it running? Where are the boards?
+  status                       Is it running? Where are the boards? Is there a new version?
+  update [--check]             Update Mapache to the latest version and restart it (--check: only look)
   where                        Print the folder where the boards are saved
   shortcut                     Put a Mapache shortcut on the desktop
   autostart on|off             Start Mapache when you log in to this computer
@@ -210,6 +212,39 @@ function teamCommand(pos, opt) {
 }
 
 // Acceso directo en el escritorio para abrir Mapache con doble clic.
+// Actualizar Mapache. Con una copia de git: `git pull` y, si estaba en marcha, se reinicia igual que estaba
+// (mismo modo y misma carpeta de tableros). Sin git (zip, Docker) explica cómo hacerlo. Los tableros no se tocan.
+async function update(opt) {
+  const was = await Launch.running();
+  const dataDir = (was && was.dataDir) || Store.dataDir();
+  const s = await Update.createChecker({ dir: dataDir, current: version, disabled: false }).check({ force: true });
+  const latest = s.latest ? `the latest is ${s.latest}` : 'GitHub could not be reached';
+  if (opt.check) return s.available ? `A new version is available: ${s.latest} (you have ${version}).\nWhat's new: ${s.url}\nUpdate with: mapache update` : s.latest ? `Mapache is up to date (${version}).` : `Couldn't check for updates (${latest}). You have ${version}.`;
+  if (!fs.existsSync(path.join(ROOT, '.git'))) {
+    return `This copy of Mapache was not installed with git, so it can't update itself (you have ${version}, ${latest}).\n` +
+      `Download the latest version from ${Update.RELEASES} and replace the folder\n  ${ROOT}\nwith it. Your boards live in ${dataDir} and are not touched.\n` +
+      'With Docker, on the server: git pull && docker compose up -d --build';
+  }
+  if (s.latest && !s.available) return `Mapache is up to date (${version}).`;
+  const { spawnSync } = require('child_process');
+  const pull = spawnSync('git', ['-C', ROOT, 'pull', '--ff-only'], { encoding: 'utf8' });
+  if (pull.error) throw new Error(`Updating needs git, and it was not found. Install it from https://git-scm.com, or download the latest version from ${Update.RELEASES}`);
+  if (pull.status !== 0) {
+    throw new Error(`git pull did not work:\n${String(pull.stderr || pull.stdout).trim()}\n` +
+      `If you changed files inside ${ROOT}, save a copy of your changes, run: git -C "${ROOT}" stash   and try again.`);
+  }
+  const now = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8')).version;
+  let restart = '';
+  if (was) {
+    await Launch.stop();
+    if (was.mode === 'team') process.env.MAPACHE_MODE = 'team';
+    if (was.dataDir) process.env.MAPACHE_DATA = was.dataDir;
+    const info = await Launch.start({ port: was.port, store: Store.open() });
+    restart = `\nMapache restarted at http://localhost:${info.port}: reload the tab in the browser to use the new version.`;
+  }
+  return `${now !== version ? `Updated Mapache from ${version} to ${now}.` : `Mapache is up to date (${now}).`}${restart}\nYour boards were not touched (${dataDir}).`;
+}
+
 async function shortcut() {
   const node = process.execPath;
   const dir = desktopDir();
@@ -288,8 +323,12 @@ async function main() {
       return console.log((await Launch.stop()) ? 'Mapache stopped.' : 'Mapache was not running.');
     case 'status': {
       const info = await Launch.running();
-      return console.log(info ? `Running at http://localhost:${info.port} (version ${info.version}, pid ${info.pid})\nBoards: ${info.dataDir}` : `Not running (start it with: mapache start)\nBoards: ${Store.dataDir()}`);
+      const u = Update.readCache((info && info.dataDir) || Store.dataDir());
+      const news = u && u.latest && Update.newer(u.latest, version) ? `\nA new version is available: ${u.latest} (you have ${version}). Update with: mapache update` : '';
+      return console.log((info ? `Running at http://localhost:${info.port} (version ${info.version}, pid ${info.pid})\nBoards: ${info.dataDir}` : `Not running (start it with: mapache start)\nBoards: ${Store.dataDir()}`) + news);
     }
+    case 'update':
+      return console.log(await update(opt));
     case 'where':
       return console.log(Store.open().dir);
     case 'shortcut':

@@ -5009,6 +5009,40 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: ${THEME_COLO
     location.reload();
   });
 
+  // Versión nueva publicada en GitHub: el servidor lo mira una vez al día (ver lib/update.js) y aquí se avisa,
+  // una sola vez por versión (la × la deja para la siguiente).
+  let newver = null;
+  $('#newver-close').innerHTML = UI.close;
+  async function checkNewVersion() {
+    if (!location.protocol.startsWith('http')) return;
+    try {
+      const r = await fetch('api/update', { cache: 'no-store' });
+      if (!r.ok || !/json/.test(r.headers.get('content-type') || '')) return;
+      newver = await r.json();
+    } catch { return; }
+    const bar = $('#newver-bar');
+    if (!newver || !newver.available || pref('mindmap:newver-dismissed') === newver.latest) { bar.hidden = true; return; }
+    $('#newver-text').textContent = t('Mapache {version} ya está disponible', { version: newver.latest });
+    bar.hidden = false;
+  }
+  $('#newver-close').addEventListener('click', () => {
+    if (newver && newver.latest) pref('mindmap:newver-dismissed', newver.latest);
+    $('#newver-bar').hidden = true;
+  });
+  $('#newver-notes').addEventListener('click', () => { if (newver && newver.url) window.open(newver.url, '_blank', 'noopener'); });
+  $('#newver-how').addEventListener('click', () => {
+    if (!newver) return;
+    const team = !!Store.status().team;
+    const msg = team
+      ? [t('En el servidor de Mapache, en la carpeta de Mapache:'), newver.how || 'git pull && docker compose up -d --build', '',
+        t('Todos verán la versión nueva al recargar. Los tableros no se tocan.')].join('\n')
+      : [t('Pídele a tu agente de IA: «Actualiza Mapache».'), '', t('O hazlo tú en una terminal:'), newver.how || 'node bin/mapache.js update', '',
+        t('Tus tableros no se tocan: están en otra carpeta.')].join('\n');
+    uiAlert(msg, { title: t('Actualizar a Mapache {version}', { version: newver.latest }) });
+  });
+  setTimeout(checkNewVersion, 4000);
+  setInterval(checkNewVersion, 6 * 60 * 60 * 1000);
+
   // Acceso para pruebas desde las herramientas de desarrollo.
   window.mapache = {
     get doc() { return doc; }, get layout() { return layout; }, get selectedId() { return selectedId; },

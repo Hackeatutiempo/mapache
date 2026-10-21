@@ -75,6 +75,7 @@ listen anywhere but `localhost`: boards are never exposed without accounts.
 | `HOST` | `0.0.0.0` in team mode | Interface to listen on |
 | `TRUST_PROXY` | `0` | `1` behind a reverse proxy: trust `X-Forwarded-Proto` and `X-Forwarded-Host` |
 | `MAPACHE_DATA` | `/data` in Docker, `~/.mapache` otherwise | Where boards, accounts and videos are saved |
+| `MAPACHE_UPDATE_CHECK` | on | `off`: do not ask GitHub once a day for a new version (admins see a notice when there is one) |
 | `MAPACHE_ADMIN_EMAIL`, `MAPACHE_ADMIN_PASSWORD`, `MAPACHE_ADMIN_NAME` | — | Create the admin account on the first start |
 
 ## People and invitations

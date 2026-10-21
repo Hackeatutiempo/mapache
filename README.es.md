@@ -91,6 +91,9 @@ Abre **<http://localhost:4321>** y a pensar. Las siguientes veces, doble clic en
 Tus tableros se guardan solos como archivos JSON en `~/.mapache` (con `node bin/mapache.js where` ves la carpeta
 exacta). **Exportar copia de seguridad** (abajo a la izquierda) te sigue dando todo en un solo archivo.
 
+Cuando sale una versión nueva, Mapache te avisa en la app. Actualiza con `node bin/mapache.js update` (o pídele a tu
+agente «actualiza Mapache»): la descarga y reinicia Mapache, y tus tableros no se tocan.
+
 ## 🤖 Tu agente de IA también puede usarlo
 
 Mapache trae un **servidor MCP** (el estándar abierto con el que los agentes de IA usan herramientas) y una **línea de
@@ -280,6 +283,10 @@ Sin cuentas, sin analítica y sin servidores que no sean tuyos. Los tableros son
 ordenador, con una copia en el navegador para que la app funcione sin conexión. El servidor local solo escucha en tu
 propio ordenador y rechaza peticiones de otras webs. El servidor MCP también se ejecuta en tu ordenador; el proveedor
 de tu agente ve lo que el agente lee, como con cualquier otra herramienta que le des.
+
+Una vez al día el servidor pregunta a GitHub cuál es la última versión de Mapache, para avisarte cuando hay una nueva.
+Es una consulta anónima de información pública, sin nada tuyo ni de tus tableros. Se desactiva con
+`MAPACHE_UPDATE_CHECK=off`.
 
 <details>
 <summary><b>Cómo está hecho</b></summary>

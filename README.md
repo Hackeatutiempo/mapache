@@ -92,6 +92,9 @@ Open **<http://localhost:4321>** and start thinking. Next time, double-click `Ab
 Your boards are saved automatically as JSON files in `~/.mapache` (run `node bin/mapache.js where` to see the exact
 folder). **Export backup** (bottom left) still gives you everything in one file.
 
+When a new version comes out, Mapache tells you in the app. Update with `node bin/mapache.js update` (or ask your
+agent to "update Mapache"): it downloads it and restarts Mapache, and your boards are not touched.
+
 ## 🤖 Your AI agent can use it too
 
 Mapache ships with an **MCP server** (the open standard that lets AI agents use tools) and a **command line**.
@@ -268,6 +271,10 @@ on your computer, with a copy in your browser so the app works offline. The loca
 computer and refuses requests from other websites. The MCP server runs on your computer too; your agent's provider
 sees what the agent reads, as with any other tool you give it. In team mode the boards live on your own server, behind
 accounts (see [TEAM.md](TEAM.md#security-notes)).
+
+Once a day the server asks GitHub which is the latest version of Mapache, to tell you when there is a new one. It is an
+anonymous request for public information, with nothing about you or your boards. Turn it off with
+`MAPACHE_UPDATE_CHECK=off`.
 
 <details>
 <summary><b>How it is built</b></summary>

@@ -63,6 +63,14 @@ const TYPES = {
 };
 
 const store = Store.open();
+// Versión nueva publicada en GitHub (una consulta al día, sin datos tuyos; MAPACHE_UPDATE_CHECK=off la desactiva).
+const updates = require('./lib/update').createChecker({ dir: store.dir, current: version });
+// En modo equipo solo se lo cuenta a quien administra el servidor, que es quien puede actualizarlo.
+function updateInfo(user) {
+  const s = updates.status();
+  if (TEAM && !(user && user.role === 'admin')) return { current: version, available: false };
+  return { ...s, how: TEAM ? 'git pull && docker compose up -d --build' : `node "${path.join(__dirname, 'bin', 'mapache.js')}" update` };
+}
 
 // ---------- Avisos en directo (Server-Sent Events), presencia y cursores ----------
 
@@ -401,6 +409,7 @@ const server = http.createServer(async (req, res) => {
         if (url === '/mcp') res.setHeader('WWW-Authenticate', 'Bearer realm="mapache"');
         return send(res, 401, { error: 'Log in first' });
       }
+      if (url === '/api/update' && req.method === 'GET') return send(res, 200, updateInfo(user));
       return url === '/mcp' ? await mcpHTTP(req, res, user) : await api(req, res, url, user);
     }
   } catch (e) {
@@ -430,6 +439,12 @@ server.listen(PORT, HOST, () => {
   } else console.log(say(`Mapache en http://localhost:${PORT}`, `Mapache is running at http://localhost:${PORT}`));
   console.log(say(`Tableros: ${store.dir}`, `Boards: ${store.dir}`));
   askStar();
+  // La primera consulta, un poco después de arrancar; luego se repasa cada pocas horas (solo pregunta si pasó un día).
+  const look = () => updates.check().then((s) => {
+    if (s.available && !look.told) { look.told = true; console.log(say(`Hay una versión nueva de Mapache: ${s.latest} (tienes ${version}). ${s.url}`, `A new version of Mapache is available: ${s.latest} (you have ${version}). ${s.url}`)); }
+  }).catch(() => {});
+  setTimeout(look, 20 * 1000).unref();
+  setInterval(look, 6 * 60 * 60 * 1000).unref();
 }).on('error', (e) => {
   if (e.code === 'EADDRINUSE') { console.log(say(`Ya estaba abierto en http://localhost:${PORT}`, `Already running at http://localhost:${PORT}`)); process.exit(0); }
   throw e;

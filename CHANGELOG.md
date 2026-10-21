@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.6.0 — 2026-10-21
+
+**Know when there is a new version.**
+
+### Added
+- Mapache tells you in the app when a new version is out, with what changed and how to update. Close the notice and
+  it does not come back until the next version. In team mode only admins see it, since they are the ones who update
+  the server.
+- `mapache update` downloads the new version (`git pull`) and restarts Mapache the way it was running; your boards
+  are not touched. `mapache update --check` only looks, and `mapache status` also says when there is a new version.
+  Your AI agent can do it too: ask it to "update Mapache".
+
+### Privacy
+- To know about new versions, the server asks GitHub once a day which is the latest release. It is an anonymous request
+  for public information, with nothing about you or your boards. Turn it off with `MAPACHE_UPDATE_CHECK=off`; it never
+  runs in CI.
+
 ## 0.5.4 — 2026-10-21
 
 ### Fixed

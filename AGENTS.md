@@ -188,12 +188,16 @@ with that person's role; with *Can view* you can only read.
 
 ## Updating
 
+When the person asks you to update Mapache (the app tells them when a new version is out):
+
 ```bash
-cd ~/Mapache && git pull
-node bin/mapache.js stop && node bin/mapache.js start
+node "<MAPACHE>/bin/mapache.js" update
 ```
 
-(or download the zip again and replace the folder). Updating from 0.3 or older: the old server has to be closed first
+It runs `git pull` and restarts Mapache the way it was running (`--check` only says whether there is a new version).
+Without git (installed from the zip) it explains how: download the zip again and replace the folder. Versions before
+0.6 do not have `update` yet; there, run `cd "<MAPACHE>" && git pull`, then `node bin/mapache.js stop` and
+`node bin/mapache.js start`. Updating from 0.3 or older: the old server has to be closed first
 (see *Troubleshooting*); the first time the app opens afterwards, the boards that lived only in the browser are copied
 to files by themselves. Boards are not affected: they live in `~/.mapache`, outside the
 app folder. After updating, an open tab shows *"A new version of Mapache is available"* with a reload button.

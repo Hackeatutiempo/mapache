@@ -449,6 +449,15 @@ kbd { font: 600 10.5px var(--ui-font); background: var(--kbd); color: var(--kbd-
   font-size: 13px; box-shadow: 0 8px 24px var(--shadow); }
 #update-bar:not([hidden]) { display: flex; }
 #update-bar button { background: var(--accent); color: #fff; border-radius: 7px; padding: 5px 12px; font-weight: 600; }
+/* Versión nueva publicada: mismo aspecto, sin tapar el aviso de recargar si salieran los dos. */
+#newver-bar { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); z-index: 19; align-items: center; gap: 8px;
+  padding: 6px 6px 6px 16px; border-radius: 10px; background: var(--panel, #1a222c); border: 1px solid var(--accent); color: var(--ink);
+  font-size: 13px; box-shadow: 0 8px 24px var(--shadow); max-width: calc(100% - 32px); }
+#newver-bar:not([hidden]) { display: flex; }
+#update-bar:not([hidden]) ~ #newver-bar { top: 62px; }
+#newver-how { background: var(--accent); color: #fff; border-radius: 7px; padding: 5px 12px; font-weight: 600; white-space: nowrap; }
+#newver-notes { border-radius: 7px; padding: 5px 10px; white-space: nowrap; }
+#newver-close { width: 26px; height: 26px; }
 
 /* Selección de varios elementos: contorno fino en cada uno (el marco común lo dibuja la capa de UI). */
 .mm-item.in-sel { box-shadow: 0 0 0 1.5px var(--accent-soft); }

@@ -22,6 +22,16 @@
     'No se pudo crear la imagen ({msg}). Prueba a exportar en SVG.': 'Couldn’t create the image ({msg}). Try exporting as SVG.',
     'Hay una versión nueva de Mapache': 'A new version of Mapache is available',
     'Recargar': 'Reload',
+    'Mapache {version} ya está disponible': 'Mapache {version} is available',
+    'Cómo actualizar': 'How to update',
+    'Novedades': "What's new",
+    'Ahora no': 'Not now',
+    'Actualizar a Mapache {version}': 'Update to Mapache {version}',
+    'Pídele a tu agente de IA: «Actualiza Mapache».': 'Ask your AI agent: "Update Mapache".',
+    'O hazlo tú en una terminal:': 'Or do it yourself in a terminal:',
+    'Tus tableros no se tocan: están en otra carpeta.': 'Your boards are not touched: they live in another folder.',
+    'En el servidor de Mapache, en la carpeta de Mapache:': 'On the Mapache server, in the Mapache folder:',
+    'Todos verán la versión nueva al recargar. Los tableros no se tocan.': 'Everyone gets the new version when they reload. Boards are not touched.',
 
     // ---------- Contenido que crea la app ----------
     'Idea central': 'Central idea',
