@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.6.1 — 2026-10-21
+
+### Improved
+- Sharing is easier to find: the export button at the top right has a clearer icon (an arrow going out), and every
+  board in the sidebar has **Export or share…** in its menu.
+- New in that menu: **Mapache file**. It saves the board, with its uploaded videos, as one `.mapache.json` file that
+  someone else opens in their Mapache with **Import backup** and keeps editing. Importing it never replaces a board
+  that already exists.
+- **About** (the ⓘ button) now shows which version of Mapache you have.
+
 ## 0.6.0 — 2026-10-21
 
 **Know when there is a new version.**

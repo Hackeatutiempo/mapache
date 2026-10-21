@@ -2984,7 +2984,8 @@
     } else if (kind === 'menu-export') {
       html = `<div class="menu-label">${t('Exportar o compartir este tablero')}</div>` +
         item('export-html', `${UI.globe} ${t('Página web para compartir (.html)')}`) + item('export-pdf', `${UI.download} ${t('PDF')}`) +
-        item('export-png', `${UI.image} ${t('Imagen PNG')}`) + item('export-svg', `${UI.image} ${t('Imagen SVG (vectorial)')}`);
+        item('export-png', `${UI.image} ${t('Imagen PNG')}`) + item('export-svg', `${UI.image} ${t('Imagen SVG (vectorial)')}`) +
+        '<div class="menu-sep"></div>' + item('export-file', `${UI.map} ${t('Archivo de Mapache (para seguir editándolo)')}`);
     } else if (kind === 'menu-theme') {
       html = [['dark', t('Oscuro'), UI.moon], ['light', t('Claro'), UI.sun], ['system', t('Según el sistema'), UI.monitor]]
         .map(([k, label, ic]) => `<button class="menu-item${themePref === k ? ' on' : ''}" data-act="theme" data-arg="${k}">${ic} ${label}</button>`).join('');
@@ -3215,6 +3216,7 @@
       case 'delete': closePopover(); return deleteNode(id);
       case 'export-png': closePopover(); return exportImage('png');
       case 'export-svg': closePopover(); return exportImage('svg');
+      case 'export-file': closePopover(); return exportBoardFile();
       case 'export-pdf': closePopover(); return exportImage('pdf');
       case 'export-html': closePopover(); return exportImage('html');
       case 'note-color': closePopover(); noteColor = arg; pref('mindmap:noteColor', arg); return setItem(selItem, { color: arg });
@@ -4535,6 +4537,8 @@
     currentId: () => (map ? map.id : null),
     currentTitle: () => (map ? titleOf(map) : ''),
     openMap, createMap, deleteMap, moveMap, renameMap, duplicateMap,
+    // Desde el menú de un tablero en la barra lateral: se abre y se despliega el menú de exportar de arriba.
+    shareMap: async (id) => { if (!map || map.id !== id) await openMap(id); openPopover('menu-export', $('#export-png')); },
   });
 
   // Comentarios y menciones (src/comments.js): sus chinchetas, el hilo, el panel y la bandeja de menciones.
@@ -4581,6 +4585,25 @@
       }
     }
     download(t('mapache-copia-{date}.json', { date }),new Blob([JSON.stringify({ app: 'mapache', version: 4, folders, maps: all, media }, null, 2)], { type: 'application/json' }));
+  }
+
+  // Un solo tablero como archivo de Mapache, para pasárselo a alguien: lo abre con «Importar copia» y lo sigue
+  // editando. Lleva sus vídeos subidos y un id nuevo, para que importarlo nunca pise un tablero que ya exista.
+  async function exportBoardFile() {
+    if (!map) return;
+    if (editing) commitEdit();
+    if (saveTimer) await saveNow();
+    const m = JSON.parse(JSON.stringify(await Store.get(map.id) || map));
+    const media = {};
+    for (const it of Object.values(m.doc.items || {})) {
+      if (it.type !== 'video' || !it.mediaId || media[it.mediaId]) continue;
+      const rec = await Store.media.get(it.mediaId);
+      if (rec) media[it.mediaId] = { type: rec.type, name: rec.name, data: await blobToDataURL(rec.blob) };
+    }
+    const board = { id: uid(), title: titleOf(m), folderId: null, doc: m.doc, createdAt: Date.now(), updatedAt: Date.now() };
+    const name = `${titleOf(m).replace(/[\\/:*?"<>|]+/g, '').trim().slice(0, 60) || 'mapache'}.mapache.json`;
+    download(name, new Blob([JSON.stringify({ app: 'mapache', version: 4, folders: [], maps: [board], media }, null, 2)], { type: 'application/json' }));
+    toast(t('Guardado. Quien lo reciba lo abre en Mapache con «Importar copia».'));
   }
 
   async function importBackup(file) {
@@ -4859,7 +4882,12 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: ${THEME_COLO
 
   // Tarjeta del creador (botón «Información», junto al de atajos).
   const about = $('#about');
-  function toggleAbout() { about.hidden = !about.hidden; }
+  function toggleAbout() {
+    // La versión la da el servidor (sin servidor, la app no la sabe y no se muestra).
+    const v = Store.status().version;
+    $('#about-version').textContent = v ? t('Versión {version}', { version: v }) : '';
+    about.hidden = !about.hidden;
+  }
   about.addEventListener('click', (e) => { if (e.target === about) toggleAbout(); });
   for (const el of about.querySelectorAll('[data-icon]')) el.innerHTML = UI[el.dataset.icon] || '';
 
@@ -4932,7 +4960,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: ${THEME_COLO
   const setIcon = (sel, icon, label) => { const el = $(sel); el.innerHTML = label ? `${icon}<span>${label}</span>` : icon; };
   setIcon('#new-map', UI.plus);
   setIcon('#toggle-sidebar', UI.sidebar);
-  setIcon('#export-png', UI.image);
+  setIcon('#export-png', UI.upload);
   $('#theme-btn').addEventListener('click', (e) => openPopover('menu-theme', e.currentTarget));
   applyTheme();
   setIcon('#lang-btn', UI.globe);

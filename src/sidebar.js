@@ -198,6 +198,7 @@
       [t('Personalizar…'), () => picker(anchor, 'map', id)],
       [t('Duplicar'), () => api.duplicateMap(id)],
       [t('Mover a…'), () => moveMenu(anchor, 'map', id)],
+      [t('Exportar o compartir…'), () => api.shareMap(id)],
       null,
       [t('Borrar mapa'), () => api.deleteMap(id), 'danger'],
     ]);
