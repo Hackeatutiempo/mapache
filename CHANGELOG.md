@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.6.2 — 2026-10-21
+
+### Added
+- Your AI agent can now **see the images** on a board (screenshots, slides, photos, diagrams) with the new
+  `view_images` tool, so it can summarize, review or work on boards made of images, not only text. Before, it only
+  knew that there was an image and where. It returns them in reading order, a few at a time, and tells the agent
+  which ones remain. From the command line, `mapache tool view_images` saves them as files.
+
 ## 0.6.1 — 2026-10-21
 
 ### Improved

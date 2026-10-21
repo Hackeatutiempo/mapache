@@ -138,6 +138,7 @@ these with your real paths):
 | `add_nodes`, `update_nodes`, `move_node`, `delete_nodes`, `add_mindmap` | Grow and edit mind maps from indented outlines |
 | `add_items`, `update_items`, `delete_items` | Sticky notes, text, shapes, sections, stickers, tables, charts and video embeds |
 | `connect` | Arrows between anything, with labels |
+| `view_images` | See what the images on a board show (screenshots, slides, photos) |
 | `list_comments`, `add_comment`, `reply_comment`, `resolve_comment` | Read and write comments, with @mentions |
 | `export_board` | Save a board as a shareable web page, PDF, PNG or SVG |
 | `open_board` | Show a board in the browser |
@@ -227,7 +228,7 @@ nothing to install. Or as PDF, PNG or SVG. Your agent can do it too ("save this 
 | **Guides** | Smart alignment guides snap edges and centers while you drag (hold Alt to skip) |
 | **Right-click menu** | Copy and paste style, save as default style, arrange, align, lock, wrap in section, snap to grid and copy a link to that spot on the board |
 | **Folders** | Nested folders and maps in the sidebar, drag to reorganize, a color and an icon for each |
-| **AI agents** | MCP server and command line with 22 tools; changes from your agent appear live and can be undone |
+| **AI agents** | MCP server and command line with 23 tools (it can also see the images on your boards); changes from your agent appear live and can be undone |
 | **Comments** | Pins on the board or on any object, threads with replies, resolve, @mentions with a bell for unread ones (K) |
 | **Sync** | Boards are files on your computer; every open tab and browser stays in sync, edits made offline sync later, and simultaneous changes are merged |
 | **Teams** | Self-hosted team server (Docker): accounts, invitation links, roles, live cursors and presence, personal agent tokens |

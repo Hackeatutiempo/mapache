@@ -46,7 +46,21 @@ async function textOf(v) {
 
 const ctx = (extra = {}) => ({ open: (id, launch) => openViaApp(id, launch), exportBoard: (id, format) => exportViaApp(id, format), ...extra });
 // Lo que se escribe desde la terminal (comentarios) va firmado como «Command line».
-const run = async (name, args) => console.log(await Tools.call(name, args, ctx({ client: { name: 'Command line' } })));
+const run = async (name, args) => console.log(printable(await Tools.call(name, args, ctx({ client: { name: 'Command line' } }))));
+
+// Las imágenes (view_images) no caben en una terminal: se guardan como archivos y se escribe dónde están, para que un
+// agente que use la línea de comandos pueda abrirlas.
+function printable(out) {
+  if (!out || typeof out !== 'object' || !Array.isArray(out.content)) return out;
+  let dir = null, n = 0;
+  return out.content.map((c) => {
+    if (c.type !== 'image') return c.text;
+    if (!dir) dir = fs.mkdtempSync(path.join(require('os').tmpdir(), 'mapache-images-'));
+    const file = path.join(dir, `image-${++n}.${(c.mimeType.split('/')[1] || 'png').replace('jpeg', 'jpg').replace('svg+xml', 'svg')}`);
+    fs.writeFileSync(file, Buffer.from(c.data, 'base64'));
+    return `  saved to ${file}`;
+  }).join('\n');
+}
 
 // Exportar lo hace la app (la pestaña abierta). Si no hay ninguna, se abre el navegador en ese tablero y se espera.
 async function exportViaApp(id, format) {

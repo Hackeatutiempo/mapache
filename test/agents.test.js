@@ -224,3 +224,42 @@ test('cli: commands print readable results', () => {
   assert.match(cli('show', 'CLI board'), /- B/);
   assert.match(cli('mcp-config', 'claude-code'), /claude mcp add --scope user mapache/);
 });
+
+// Una imagen de 1×1 píxel, como las que se pegan en el tablero (data URL).
+const PIXEL = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+
+test('tools: view_images returns the images of a board, in reading order and in batches', async () => {
+  const store = Store.open(tmp());
+  const doc = baseDoc();
+  const img = (id, x, y) => ({ id, type: 'image', x, y, z: 1, w: 400, src: `data:image/png;base64,${PIXEL}` });
+  Object.assign(doc.items, { i3: img('i3', 0, 900), i2: img('i2', 500, 0), i1: img('i1', 0, 10), link: { id: 'link', type: 'image', x: 0, y: 2000, z: 1, w: 300, src: 'https://example.com/a.png' } });
+  store.putBoard({ id: 'pics', title: 'Pics', doc, createdAt: 1, updatedAt: 1 });
+  assert.match(await Tools.call('read_board', { board: 'Pics' }, { store }), /Image \{id:i1 .*view_images/);
+  const r = await Tools.call('view_images', { board: 'Pics', limit: 2 }, { store });
+  const images = r.content.filter((c) => c.type === 'image');
+  assert.strictEqual(images.length, 2);
+  assert.deepStrictEqual(images[0], { type: 'image', data: PIXEL, mimeType: 'image/png' });
+  const labels = r.content.filter((c) => c.type === 'text').map((c) => c.text).join('\n');
+  assert.ok(labels.indexOf('id:i1') < labels.indexOf('id:i2'), 'first row first, left to right');
+  assert.match(labels, /4 image\(s\)\. Showing 2; 2 more: ask with items \["i3","link"\]/);
+  const next = await Tools.call('view_images', { board: 'Pics', items: ['i3', 'link'] }, { store });
+  assert.strictEqual(next.content.filter((c) => c.type === 'image').length, 1);
+  assert.match(next.content.map((c) => c.text || '').join('\n'), /linked from https:\/\/example\.com\/a\.png/);
+  await assert.rejects(Tools.call('view_images', { board: 'Pics', items: ['r'] }, { store }), /not an image/);
+  assert.strictEqual(Tools.tools.find((t) => t.name === 'view_images').annotations.readOnlyHint, true);
+});
+
+test('mcp: view_images comes back as MCP image content', async () => {
+  const dir = tmp();
+  const store = Store.open(dir);
+  const doc = baseDoc();
+  doc.items.p = { id: 'p', type: 'image', x: 0, y: 0, z: 1, w: 200, src: `data:image/png;base64,${PIXEL}` };
+  store.putBoard({ id: 'pics', title: 'Pics', doc, createdAt: 1, updatedAt: 1 });
+  const s = mcpSession(dir);
+  try {
+    await s.rpc('initialize', { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'test', version: '1' } });
+    const res = await s.rpc('tools/call', { name: 'view_images', arguments: { board: 'Pics' } });
+    assert.ok(!res.result.isError);
+    assert.deepStrictEqual(res.result.content.find((c) => c.type === 'image'), { type: 'image', data: PIXEL, mimeType: 'image/png' });
+  } finally { s.close(); }
+});
