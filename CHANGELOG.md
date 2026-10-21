@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.6.3 — 2026-10-21
+
+### Fixed
+- On a slow or busy computer, opening Mapache while it was already running could say that "an older version of
+  Mapache is still running" and offer to stop it. It now waits a bit longer for the server to answer before
+  deciding that.
+
 ## 0.6.2 — 2026-10-21
 
 ### Added
