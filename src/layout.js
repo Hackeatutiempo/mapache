@@ -164,8 +164,10 @@
     return { boxes, connectors, vertical, bounds: { x: minX, y: minY, w: maxX - minX, h: maxY - minY } };
   }
 
-  // Punto de anclaje en el eje cruzado: centro de la primera línea (horizontal) o centro (vertical).
-  const anchorCross = (b, vertical) => (vertical ? b.x + b.w / 2 : b.y + b.st.padY + b.st.line / 2);
+  // Punto de anclaje en el eje cruzado: el centro del nodo. Con una sola línea coincide con el centro de esa línea; con
+  // varias, la rama llega a la mitad del texto (si no, un hijo único de varias líneas, que se centra con su padre,
+  // recibiría la línea torcida hacia su primera línea).
+  const anchorCross = (b, vertical) => (vertical ? b.x + b.w / 2 : b.y + b.h / 2);
   // Borde exterior del nodo en el eje principal.
   const outerEdge = (b, vertical) => (vertical ? (b.dir > 0 ? b.y + b.h : b.y) : (b.dir > 0 ? b.x + b.w : b.x));
   const innerEdge = (b, vertical) => (vertical ? (b.dir > 0 ? b.y : b.y + b.h) : (b.dir > 0 ? b.x : b.x + b.w));

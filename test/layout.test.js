@@ -84,3 +84,16 @@ test('plegar oculta descendientes y cuenta los ocultos', () => {
   assert.strictEqual(B.b.hidden, 3);
   assert.ok(!B.b1.visible && !B.n.visible);
 });
+
+test('un hijo único de varias líneas recibe la rama recta, a la mitad de su texto', () => {
+  const doc = sample();
+  // n (hijo único de b2) ocupa tres líneas.
+  const tall = (id) => (id === 'n' ? { w: 299, h: 72 } : size(id));
+  const { boxes: B, connectors } = L.computeLayout(doc, tall);
+  const c = connectors.find((x) => x.id === 'n');
+  const p = nums(c.d);
+  const startY = p[1], endY = p[p.length - 1];
+  assert.strictEqual(startY, B.b2.y + B.b2.h / 2, 'sale de la mitad del padre');
+  assert.strictEqual(endY, B.n.y + B.n.h / 2, 'llega a la mitad del hijo');
+  assert.strictEqual(startY, endY, 'recta: el hijo está centrado con su padre');
+});

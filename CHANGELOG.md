@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.6.4 — 2026-10-22
+
+### Improved
+- **Links are detected by themselves.** A web address you type or paste in a node, a note or a table cell
+  (`https://…` or `www.…`) becomes a link when you finish editing. Pasting an address over selected text turns
+  that text into a link. Addresses that an AI agent writes become links too.
+- **Fold and unfold without selecting the parent.** The button to fold a branch now appears when the mouse is
+  next to the node or over the lines that go to its children, and it stays while you move to it.
+
+### Fixed
+- A node with only one child that takes several lines got its line drawn towards the first line of text, so it
+  looked crooked. Lines now reach the middle of the node, and that line is straight.
+
 ## 0.6.3 — 2026-10-21
 
 ### Fixed

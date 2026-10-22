@@ -11,6 +11,7 @@
   const Arrange = window.MMArrange;
   const Ink = window.MMInk;
   const Merge = window.MMMerge;
+  const Links = window.MMLinks;
   const Comments = window.MMComments;
   const I18n = window.MMI18n;
   const t = I18n.t;
@@ -100,6 +101,7 @@
   let CONN_COLOR = '#a3adba';
   let SURFACE = '#111821';
   let hoverId = null;
+  let hoverZone = null; // nodo con hijos junto a cuyo borde exterior está el ratón (muestra su botón de plegar)
   let hoverItem = null;
   let editing = null; // { kind: 'node' | 'item', id, before }
   let drag = null;
@@ -811,7 +813,7 @@
         parts.push(`<line x1="${s.x}" y1="${s.y}" x2="${c.x}" y2="${c.y}" stroke="${color}" stroke-width="4" stroke-linecap="round"/>` +
           `<g class="hot" data-toggle="${b.id}"><rect x="${c.x - w / 2}" y="${c.y - 10}" width="${w}" height="20" rx="10" fill="${color}"/>` +
           `<text x="${c.x}" y="${c.y + 4}" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="11.5" font-weight="700" fill="#fff">${label}</text></g>`);
-      } else if (b.id === hoverId || b.id === selectedId) {
+      } else if (b.id === hoverId || b.id === selectedId || b.id === hoverZone) {
         const c = outerPoint(b, 20);
         parts.push(`<g class="hot" data-toggle="${b.id}"><circle cx="${c.x}" cy="${c.y}" r="12" fill="transparent"/>` +
           `<circle cx="${c.x}" cy="${c.y}" r="7" fill="#111821" stroke="${color}" stroke-width="3"/></g>`);
@@ -2504,7 +2506,7 @@
       const { id, r, c, before } = editing;
       const el = editEl(), t = doc.items[id];
       editing = null;
-      if (el && t && t.rows[r]) { t.rows[r][c] = readCell(el); el.contentEditable = 'false'; el.blur(); }
+      if (el && t && t.rows[r]) { t.rows[r][c] = Links.linkify(readCell(el)); el.contentEditable = 'false'; el.blur(); }
       const rec = itemEls.get(id);
       if (rec) rec.sig = '';
       commit(before);
@@ -2514,7 +2516,11 @@
     const { before, kind, id } = editing;
     editing = null;
     if (el) {
-      if (target) storeEditor(target, el);
+      if (target) {
+        storeEditor(target, el);
+        // Las direcciones escritas o pegadas pasan a ser enlaces al terminar de editar.
+        target.lines = target.lines.map(Links.linkify);
+      }
       el.contentEditable = 'false';
       el.blur();
       const rec = kind === 'node' ? els.get(id) : itemEls.get(id);
@@ -3579,7 +3585,14 @@
     if (!files.length) files = [...(cd.items || [])].filter((i) => i.kind === 'file').map((i) => i.getAsFile()).filter((f) => f && isMedia(f));
     if (editing) {
       e.preventDefault();
-      document.execCommand('insertText', false, cd.getData('text/plain').replace(/\r?\n/g, ' '));
+      const text = cd.getData('text/plain');
+      // Pegar una dirección sobre un texto seleccionado lo convierte en enlace.
+      const url = Links.asUrl(text), sel = getSelection();
+      if (url && !sel.isCollapsed && editEl()?.contains(sel.anchorNode)) {
+        document.execCommand('createLink', false, url);
+        return onEditorInput();
+      }
+      document.execCommand('insertText', false, text.replace(/\r?\n/g, ' '));
       return;
     }
     if (!help.hidden || !about.hidden) return;
@@ -3866,9 +3879,31 @@
   });
 
   let rafPending = false;
+  // Zona donde aparece el botón de plegar de un nodo con hijos: desde su borde exterior casi hasta sus hijos,
+  // a lo alto del nodo y de las líneas que salen hacia ellos. Así no hace falta seleccionar el padre.
+  function toggleZoneAt(p) {
+    for (const b of Object.values(layout.boxes || {})) {
+      if (!b.visible || !b.children.length || b.level === 0 || b.collapsed) continue;
+      const v = b.vertical;
+      const d = ((v ? p.y : p.x) - L.outerEdge(b, v)) * b.dir;
+      if (d < -8 || d > L.PARENT_GAP - 12) continue;
+      let lo = v ? b.x : b.y, hi = v ? b.x + b.w : b.y + b.h;
+      for (const k of b.children) {
+        const kb = layout.boxes[k];
+        if (kb && kb.visible) { const c = L.anchorCross(kb, v); lo = Math.min(lo, c); hi = Math.max(hi, c); }
+      }
+      const c = v ? p.x : p.y;
+      if (c >= lo - 8 && c <= hi + 8) return b.id;
+    }
+    return null;
+  }
+  stage.addEventListener('pointerleave', () => { if (hoverZone) { hoverZone = null; drawUI(); } });
+
   stage.addEventListener('pointermove', (e) => {
     mouseWorld = toWorld(e.clientX, e.clientY);
     if (!drag) {
+      const z = tool === 'select' ? toggleZoneAt(mouseWorld) : null;
+      if (z !== hoverZone) { hoverZone = z; drawUI(); }
       if (!(e.target.closest && e.target.closest('[data-tip]'))) hideTip();
       const hit = e.target.closest && e.target.closest('.chart-hit');
       if (hit) showChartTip(hit, e); else chartTip.hidden = true;

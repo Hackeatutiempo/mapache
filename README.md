@@ -286,6 +286,7 @@ Plain JavaScript, no framework and no build step: the browser runs exactly the c
 |---|---|
 | `src/app.js` | State, in-place editing, context bar, menus, dragging, shortcuts |
 | `src/layout.js` | Mind map layout and line geometry (pure, tested) |
+| `src/links.js` | Turns typed or pasted web addresses into links |
 | `src/connectors.js` | Connector routing |
 | `src/arrange.js` | Arrange as grid, tree or mind map |
 | `src/ink.js` | Freehand smoothing, eraser, lasso, shape recognition |
