@@ -4658,13 +4658,36 @@
     }
   }
 
-  let cssText = null;
+  let cssText = null, layoutJS = null;
   // El tablero entero como un SVG autónomo (el HTML de cada objeto va en foreignObject, con los estilos dentro).
-  async function buildSVG() {
+  // `interactive` (la página HTML): se dibuja con todas las ramas desplegadas y se devuelve lo que necesita la página
+  // para volver a colocar el mapa al plegar o desplegar (estructura, medidas de los nodos y el motor de layout).
+  async function buildSVG({ interactive = false } = {}) {
     if (editing) commitEdit();
     const prev = [selectedId, selItem, hoverId, hoverItem];
     selectedId = null; selItem = null; hoverId = null; hoverItem = null;
-    render();
+    let mm = null;
+    if (interactive) {
+      const open = { ...doc, nodes: {} };
+      for (const [id, n] of Object.entries(doc.nodes)) open.nodes[id] = { ...n, style: { ...n.style, collapsed: undefined } };
+      render(open);
+      const roots = rootIdsOf(doc), nodes = {}, sizes = {}, settings = {};
+      for (const [id, n] of Object.entries(doc.nodes)) {
+        const st = n.style || {};
+        nodes[id] = { id, parentId: n.parentId, order: n.order, style: { color: st.color, side: st.side, dash: st.dash, collapsed: st.collapsed || undefined } };
+        const rec = els.get(id);
+        if (rec) sizes[id] = { w: rec.el.offsetWidth, h: rec.el.offsetHeight };
+      }
+      for (const r of roots) { const st = mapSettings(doc, r); settings[r] = { layout: st.layout, lines: st.lines, origin: st.origin || { x: 0, y: 0 } }; }
+      let items = null;
+      for (const id of Object.keys(doc.items)) {
+        const r = itemRect(id);
+        if (!r) continue;
+        items = items ? { x1: Math.min(items.x1, r.x), y1: Math.min(items.y1, r.y), x2: Math.max(items.x2, r.x + r.w), y2: Math.max(items.y2, r.y + r.h) } : { x1: r.x, y1: r.y, x2: r.x + r.w, y2: r.y + r.h };
+      }
+      mm = { roots, nodes, sizes, settings, items };
+      if (!layoutJS) layoutJS = await (await fetch('layout.js')).text();
+    } else render();
     if (!cssText) cssText = await (await fetch('styles.css')).text();
     const b = contentBounds(), pad = 48;
     const w = Math.ceil(b.w + pad * 2), h = Math.ceil(b.h + pad * 2);
@@ -4674,12 +4697,16 @@
     const html = (layer) => [...layer.children].map((el) => xs.serializeToString(el)).join('');
     const fo = (content) => `<foreignObject x="0" y="0" width="${w}" height="${h}"><div xmlns="http://www.w3.org/1999/xhtml" style="position:relative;width:${w}px;height:${h}px">` +
       `<style><![CDATA[${cssText}]]></style><div style="position:absolute;left:${ox}px;top:${oy}px">${content}</div></div></foreignObject>`;
+    // En la página interactiva las líneas y los botones de plegar los dibuja la propia página (los botones, encima de
+    // todo para que se puedan pulsar).
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">` +
       `<rect width="${w}" height="${h}" fill="${THEME_COLORS[theme].bg}"/>${fo(html(sectionsLayer) + html(backLayer))}` +
-      `<g transform="translate(${ox},${oy})">${gLines.innerHTML}${gUI.innerHTML}</g>${fo(html(world) + html(frontLayer))}<g transform="translate(${ox},${oy})">${gConns.innerHTML}</g></svg>`;
+      (mm ? `<g id="mp-lines" transform="translate(${ox},${oy})"></g>` : `<g transform="translate(${ox},${oy})">${gLines.innerHTML}${gUI.innerHTML}</g>`) +
+      `${fo(html(world) + html(frontLayer))}<g transform="translate(${ox},${oy})">${gConns.innerHTML}</g>` +
+      (mm ? `<g id="mp-ui" transform="translate(${ox},${oy})"></g>` : '') + '</svg>';
     [selectedId, selItem, hoverId, hoverItem] = prev;
     render();
-    return { svg, w, h };
+    return { svg, w, h, ox, oy, mm };
   }
 
   // Dibuja el SVG en un lienzo, al doble de resolución si cabe (los navegadores limitan el tamaño de un lienzo).
@@ -4697,7 +4724,7 @@
   const canvasBlob = (canvas, type, q) => new Promise((ok, ko) => canvas.toBlob((b) => (b ? ok(b) : ko(new Error(t('el tablero es demasiado grande')))), type, q));
 
   async function buildImage(kind) {
-    const out = await buildSVG();
+    const out = await buildSVG({ interactive: kind === 'html' });
     if (kind === 'svg') return new Blob([out.svg], { type: 'image/svg+xml' });
     if (kind === 'html') return new Blob([standaloneHTML(out)], { type: 'text/html' });
     const canvas = await svgCanvas(out);
@@ -4734,12 +4761,13 @@
 
   // Página web de un solo archivo para compartir el tablero: se abre en cualquier navegador, sin instalar nada,
   // con zoom y desplazamiento. Los textos y enlaces siguen siendo texto (se pueden buscar y pulsar).
-  function standaloneHTML({ svg, w, h }) {
+  function standaloneHTML({ svg, w, h, ox, oy, mm }) {
     const title = titleOf(map);
     const light = theme === 'light';
     // Los vídeos subidos solo existen en la app: en la página quedan como un aviso.
     const clean = svg.replace(/<video\b[^>]*>(?:<\/video>)?/g, `<div class="video-missing">${esc(t('Vídeo (se ve en la app)'))}</div>`);
-    const data = JSON.stringify(clean).replace(/</g, '\\u003c').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
+    const json = (v) => JSON.stringify(v).replace(/</g, '\\u003c').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
+    const data = json(clean);
     const ui = light ? { bar: '#ffffff', line: '#dfe3e8', ink: '#1f2733', muted: '#5b6573', hover: '#eef1f5' } : { bar: '#1a222c', line: '#2c3644', ink: '#eef1f5', muted: '#9aa5b4', hover: '#253040' };
     const L10N = { fit: t('Encajar'), made: t('Hecho con'), zin: t('Acercar'), zout: t('Alejar'), hint: t('Arrastra para moverte · Ctrl + rueda para hacer zoom') };
     return `<!doctype html>
@@ -4753,6 +4781,9 @@
 html, body { margin: 0; height: 100%; overflow: hidden; background: ${THEME_COLORS[theme].bg}; }
 #mp-view { position: fixed; inset: 0; overflow: hidden; cursor: grab; touch-action: none; }
 #mp-view.drag { cursor: grabbing; }
+/* Arrastrar mueve el tablero: sin seleccionar texto ni arrastrar imágenes. */
+#mp-view, #mp-view * { user-select: none; -webkit-user-select: none; -webkit-user-drag: none; }
+#mp-view [data-toggle] { cursor: pointer; }
 #mp-view > svg { position: absolute; left: 0; top: 0; transform-origin: 0 0; overflow: visible; }
 .mp-bar { position: fixed; z-index: 10; display: flex; align-items: center; gap: 4px; padding: 6px 8px; border-radius: 12px; background: ${ui.bar}; border: 1px solid ${ui.line};
   color: ${ui.ink}; font: 13px/1.3 "Segoe UI", system-ui, -apple-system, sans-serif; box-shadow: 0 6px 24px rgb(0 0 0 / 0.18); }
@@ -4774,15 +4805,91 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: ${THEME_COLO
 <div class="mp-bar mp-title"><b>${esc(title)}</b><span>·</span><span>${esc(L10N.made)} <a href="https://github.com/Hackeatutiempo/mapache" target="_blank" rel="noopener">Mapache</a></span></div>
 <div class="mp-bar mp-zoom"><button data-z="out" title="${esc(L10N.zout)}">−</button><output>100%</output><button data-z="in" title="${esc(L10N.zin)}">+</button><button data-z="fit">${esc(L10N.fit)}</button></div>
 <div class="mp-bar mp-hint">${esc(L10N.hint)}</div>
+<script>${layoutJS.replace(/<\/script/gi, '<\\/script')}</script>
 <script>
 (function () {
-  var SVG = ${data}, W = ${w}, H = ${h};
+  var SVG = ${data}, W = ${w}, H = ${h}, OX = ${ox}, OY = ${oy}, MM = ${json(mm)};
   var view = document.getElementById('mp-view'), out = document.querySelector('.mp-zoom output');
   var svg = document.importNode(new DOMParser().parseFromString(SVG, 'image/svg+xml').documentElement, true);
   view.appendChild(svg);
   var k = 1, x = 0, y = 0;
+  // Mapa mental: se vuelve a colocar al plegar o desplegar una rama, igual que en la app.
+  var L = window.MMLayout, linesG = svg.querySelector('#mp-lines'), uiG = svg.querySelector('#mp-ui'), boxes = {}, hover = null, nodeEls = {};
+  svg.querySelectorAll('.mm-node[data-id]').forEach(function (el) { nodeEls[el.dataset.id] = el; });
+  function color(c) { return L.PALETTE[c] || c || L.PALETTE.gray; }
+  function layoutAll() {
+    boxes = {};
+    var paths = [];
+    MM.roots.forEach(function (r) {
+      var s = MM.settings[r], o = s.origin;
+      var lay = L.computeLayout({ rootId: r, settings: s, nodes: MM.nodes }, function (id) { return MM.sizes[id] || { w: 0, h: 0 }; });
+      Object.keys(lay.boxes).forEach(function (id) { var b = lay.boxes[id]; if (b.visible) { b.x += o.x; b.y += o.y; } b.vertical = lay.vertical; boxes[id] = b; });
+      paths.push('<g transform="translate(' + o.x + ',' + o.y + ')">' + lay.connectors.map(function (c) {
+        return '<path d="' + c.d + '" fill="none" stroke="' + color(c.color) + '" stroke-width="' + c.width + '" stroke-linecap="round" stroke-linejoin="round"' + (c.dash ? ' stroke-dasharray="1 9"' : '') + '/>';
+      }).join('') + '</g>');
+    });
+    Object.keys(nodeEls).forEach(function (id) {
+      var b = boxes[id], el = nodeEls[id];
+      el.style.display = b && b.visible ? '' : 'none';
+      if (b && b.visible) el.style.transform = 'translate(' + b.x + 'px, ' + b.y + 'px)';
+    });
+    linesG.innerHTML = paths.join('');
+    drawUI();
+  }
+  function outer(b, d) {
+    var v = b.vertical, c = L.anchorCross(b, v), e = L.outerEdge(b, v) + b.dir * d;
+    return v ? { x: c, y: e } : { x: e, y: c };
+  }
+  function drawUI() {
+    var parts = [];
+    Object.keys(boxes).forEach(function (id) {
+      var b = boxes[id];
+      if (!b.visible || !b.children.length || b.level === 0) return;
+      var col = color(b.color), c;
+      if (b.collapsed) {
+        var label = String(b.hidden), w = Math.max(20, label.length * 7 + 12), s = outer(b, 0);
+        c = outer(b, 8 + (b.vertical ? 10 : w / 2));
+        parts.push('<line x1="' + s.x + '" y1="' + s.y + '" x2="' + c.x + '" y2="' + c.y + '" stroke="' + col + '" stroke-width="4" stroke-linecap="round"/>' +
+          '<g data-toggle="' + id + '"><rect x="' + (c.x - w / 2) + '" y="' + (c.y - 10) + '" width="' + w + '" height="20" rx="10" fill="' + col + '"/>' +
+          '<text x="' + c.x + '" y="' + (c.y + 4) + '" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="11.5" font-weight="700" fill="#fff">' + label + '</text></g>');
+      } else if (id === hover) {
+        c = outer(b, 20);
+        parts.push('<g data-toggle="' + id + '"><circle cx="' + c.x + '" cy="' + c.y + '" r="12" fill="transparent"/><circle cx="' + c.x + '" cy="' + c.y + '" r="7" fill="${THEME_COLORS[theme].bg}" stroke="' + col + '" stroke-width="3"/></g>');
+      }
+    });
+    uiG.innerHTML = parts.join('');
+  }
+  // El botón de plegar de una rama desplegada aparece sobre el nodo o junto a las líneas que van a sus hijos.
+  function zoneAt(px, py) {
+    var ids = Object.keys(boxes);
+    for (var i = 0; i < ids.length; i++) {
+      var b = boxes[ids[i]];
+      if (!b.visible || !b.children.length || b.level === 0 || b.collapsed) continue;
+      if (px >= b.x && px <= b.x + b.w && py >= b.y && py <= b.y + b.h) return b.id;
+      var v = b.vertical, d = ((v ? py : px) - L.outerEdge(b, v)) * b.dir;
+      if (d < -8 || d > L.PARENT_GAP - 12) continue;
+      var lo = v ? b.x : b.y, hi = v ? b.x + b.w : b.y + b.h;
+      b.children.forEach(function (c) { var kb = boxes[c]; if (kb && kb.visible) { var a = L.anchorCross(kb, v); lo = Math.min(lo, a); hi = Math.max(hi, a); } });
+      var cr = v ? px : py;
+      if (cr >= lo - 8 && cr <= hi + 8) return b.id;
+    }
+    return null;
+  }
+  function toggle(id) {
+    var st = MM.nodes[id].style;
+    st.collapsed = st.collapsed ? undefined : true;
+    layoutAll();
+  }
+  // Lo que se ve: los nodos visibles y el resto de objetos, en coordenadas del SVG.
+  function visibleBounds() {
+    var it = MM.items, x1 = it ? it.x1 : Infinity, y1 = it ? it.y1 : Infinity, x2 = it ? it.x2 : -Infinity, y2 = it ? it.y2 : -Infinity;
+    Object.keys(boxes).forEach(function (id) { var b = boxes[id]; if (!b.visible) return; x1 = Math.min(x1, b.x); y1 = Math.min(y1, b.y); x2 = Math.max(x2, b.x + b.w); y2 = Math.max(y2, b.y + b.h); });
+    if (!isFinite(x1)) return { x: 0, y: 0, w: W, h: H };
+    var pad = 48;
+    return { x: x1 + OX - pad, y: y1 + OY - pad, w: x2 - x1 + pad * 2, h: y2 - y1 + pad * 2 };
+  }
   function apply() { svg.style.transform = 'translate(' + x + 'px,' + y + 'px) scale(' + k + ')'; out.textContent = Math.round(k * 100) + '%'; }
-  function fit() { var r = view.getBoundingClientRect(); k = Math.min(1.5, Math.min(r.width / W, (r.height - 60) / H) * 0.96); x = (r.width - W * k) / 2; y = (r.height - H * k) / 2 + 10; apply(); }
+  function fit() { var r = view.getBoundingClientRect(), v = visibleBounds(); k = Math.min(1.5, Math.min(r.width / v.w, (r.height - 60) / v.h) * 0.96); x = (r.width - v.w * k) / 2 - v.x * k; y = (r.height - v.h * k) / 2 + 10 - v.y * k; apply(); }
   function zoom(f, cx, cy) { var r = view.getBoundingClientRect(); if (cx == null) { cx = r.width / 2; cy = r.height / 2; } var n = Math.max(0.05, Math.min(8, k * f)); x = cx - (cx - x) * n / k; y = cy - (cy - y) * n / k; k = n; apply(); }
   view.addEventListener('wheel', function (e) {
     e.preventDefault();
@@ -4792,10 +4899,17 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: ${THEME_COLO
   var pts = {}, last = null;
   view.addEventListener('pointerdown', function (e) {
     if (e.target.closest('a, iframe, video')) return;
+    var tg = e.target.closest('[data-toggle]');
+    if (tg && e.button === 0) { e.preventDefault(); return toggle(tg.getAttribute('data-toggle')); }
     pts[e.pointerId] = [e.clientX, e.clientY]; view.setPointerCapture(e.pointerId); view.classList.add('drag'); last = null;
   });
   view.addEventListener('pointermove', function (e) {
-    var p = pts[e.pointerId]; if (!p) return;
+    var p = pts[e.pointerId];
+    if (!p) {
+      var z = e.pointerType === 'touch' ? null : zoneAt((e.clientX - x) / k - OX, (e.clientY - y) / k - OY);
+      if (z !== hover) { hover = z; drawUI(); }
+      return;
+    }
     var ids = Object.keys(pts);
     if (ids.length === 2) {
       var o = pts[ids[0] == e.pointerId ? ids[1] : ids[0]];
@@ -4807,6 +4921,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: ${THEME_COLO
   });
   function up(e) { delete pts[e.pointerId]; last = null; if (!Object.keys(pts).length) view.classList.remove('drag'); }
   view.addEventListener('pointerup', up); view.addEventListener('pointercancel', up);
+  view.addEventListener('dragstart', function (e) { e.preventDefault(); });
   document.querySelector('.mp-zoom').addEventListener('click', function (e) {
     var b = e.target.closest('[data-z]'); if (!b) return;
     if (b.dataset.z === 'in') zoom(1.25); else if (b.dataset.z === 'out') zoom(0.8); else fit();
@@ -4816,6 +4931,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: ${THEME_COLO
   });
   window.addEventListener('resize', fit);
   setTimeout(function () { var h = document.querySelector('.mp-hint'); if (h) h.style.opacity = '0'; }, 4000);
+  layoutAll();
   fit();
 })();
 </script>

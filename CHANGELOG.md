@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.6.5 — 2026-10-22
+
+### Improved
+- **Exported web pages (HTML) can fold and unfold branches.** Before, the page was a still picture of the board:
+  folded branches could not be opened. Now it holds the whole mind map: click the number on a folded branch to open
+  it (or the dot next to an open one to fold it) and the map rearranges itself, as in the app.
+
+### Fixed
+- In an exported web page, dragging over the mind map could drag a ghost picture of the board instead of moving
+  around. Dragging now always moves the board.
+
 ## 0.6.4 — 2026-10-22
 
 ### Improved
